@@ -60,7 +60,7 @@ function minheap_extract(heap) {
     if (heap.length <= 0) {
         return;
     }
-    if (heap.length == 1) {
+    if (heap.length === 1) {
         return heap.pop();
     }
 
@@ -79,7 +79,7 @@ function minheap_extract(heap) {
         if (right < heap.length && heap[right] < heap[minIndex]) {
             minIndex = right;
         }
-        if (minIndex != root) {
+        if (minIndex !== root) {
             var tmp = heap[root];
             heap[root] = heap[minIndex];
             heap[minIndex] = tmp;
