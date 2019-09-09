@@ -27,7 +27,22 @@ minheaper = {};
 
 // define insert function for min binary heap
 function minheap_insert(heap, new_element) {
+    heap.push(new_element);
+    shiftUp(heap, heap.length - 1);
 
+    function shiftUp(heap, index) {
+        if (index <= 0) {
+            return;
+        }
+
+        var parent = Math.floor((index - 1) / 2);
+        if (heap[index] < heap[parent]) {
+            var tmp = heap[index];
+            heap[index] = heap[parent];
+            heap[parent] = tmp;
+            shiftUp(heap, parent);
+        }
+    }
     // STENCIL: implement your min binary heap insert operation
 }
 
@@ -40,12 +55,40 @@ minheaper.insert = minheap_insert;
 
 // define extract function for min binary heap
 function minheap_extract(heap) {
+    if (heap.length <= 0) {
+        return;
+    }
+    if (heap.length == 1) {
+        return heap.pop();
+    }
 
+    var min = heap[0];
+    heap[0] = heap.pop();
+    shiftDown(heap, 0);
+    return min;
+
+    function shiftDown(heap, root) {
+        var left = root * 2 + 1;
+        var right = (root + 1) * 2;
+        var minIndex = root;
+        if (left < heap.length && heap[left] < heap[minIndex]) {
+            minIndex = left;
+        }
+        if (right < heap.length && heap[right] < heap[minIndex]) {
+            minIndex = right;
+        }
+        if (minIndex != root) {
+            var tmp = heap[root];
+            heap[root] = heap[minIndex];
+            heap[minIndex] = tmp;
+            shiftDown(heap, minIndex);
+        }
+    }
     // STENCIL: implement your min binary heap extract operation
 }
 
 // assign extract function within minheaper object
-
+minheaper.extract = minheap_extract;
     // STENCIL: ensure extract method is within minheaper object
 
 
