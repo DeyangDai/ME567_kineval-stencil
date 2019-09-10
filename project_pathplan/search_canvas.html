@@ -296,8 +296,8 @@ function iterateGraphSearch() {
 
         // find goal
         if (currNode.x.toFixed(1) == q_goal[0] && currNode.y.toFixed(1) == q_goal[1]) {
-            drawHighlightedPathGraph(currNode);
             search_iterate = false;
+            drawHighlightedPathGraph(currNode);
             return "succeeded";
         }
 
@@ -338,11 +338,12 @@ function iterateGraphSearch() {
                         break;
                 }
 
-                if (!nearbyNode.queued || f < nearbyNode.priority) {
-                    // alert("f: " + f + "  g: " + g + "  h: " + h);
+                if (nearbyNode.distance > g) {
                     nearbyNode.distance = g;
                     nearbyNode.parent = currNode;
+                }
 
+                if (!nearbyNode.queued || f < nearbyNode.priority) {
                     if (search_alg === "depth-first") {
                         nearbyNode.queued = true;
                         visit_queue.push(nearbyNode);
@@ -499,7 +500,7 @@ function initSearchGraph() {
                 var startNode = G[iind][jind];
                 startNode.priority = 0;
                 startNode.distance = 0;
-                minheap_insert(visit_queue, startNode);
+                visit_queue = [startNode];
             }
         }
     }
