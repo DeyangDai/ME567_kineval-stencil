@@ -275,7 +275,6 @@ function animate() {
 
 function iterateGraphSearch() {
 
-
     // STENCIL: implement a single iteration of a graph search algorithm
     //   for A-star (or DFS, BFS, Greedy Best-First)
     //   An asynch timing mechanism is used instead of a for loop to avoid 
@@ -289,7 +288,53 @@ function iterateGraphSearch() {
     //
     //   testCollision - returns whether a given configuration is in collision
     //   drawHighlightedPathGraph - draws a path back to the start location
-    //   draw_2D_configuration - draws a square at a given location 
+    //   draw_2D_configuration - draws a square at a given location
+
+    if (visit_queue.length !== 0) {
+        var currNode = minheap_extract(visit_queue);
+        currNode.visited = true;
+        search_visited++;
+
+        // find goal
+        if (currNode.x.toFixed(1) == q_goal[0] && currNode.y.toFixed(1) == q_goal[1]) {
+            drawHighlightedPathGraph(currNode);
+            search_iterate = false;
+            return "succeeded";
+        }
+
+        searchNearby(currNode);
+        return "iterating";
+    }
+    return "failed";
+
+    function searchNearby(currNode) {
+        var delta = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+        for (var i = 0; i < delta.length; i++) {
+            var iind = currNode.i + delta[i][0];
+            var jind = currNode.j + delta[i][1];
+            var x = currNode.x + delta[i][0] * eps;
+            var y = currNode.y + delta[i][1] * eps;
+            if (x < -2 || y < -2 || x > 7 || y > 7) {
+                continue;
+            }
+
+            var nearbyNode = G[iind][jind];
+
+            if (nearbyNode !== null && !testCollision([nearbyNode.x, nearbyNode.y]) && !G[iind][jind].visited) {
+                var g = currNode.distance + (i === 0 || j === 0) ? eps : Math.sqrt(2) * eps;
+                // Manhattan distance
+                var h = Math.abs(nearbyNode.x - q_goal[0]) + Math.abs(nearbyNode.y - q_goal[1]);
+                var f = g + h;
+                if (!nearbyNode.queued || f < nearbyNode.priority) {
+                    nearbyNode.distance = g;
+                    nearbyNode.priority = f;
+                    nearbyNode.parent = currNode;
+                    minheap_insert(visit_queue, nearbyNode);
+                    draw_2D_configuration([nearbyNode.x, nearbyNode.y]);
+                }
+            }
+        }
+    }
 }
 
 
@@ -430,7 +475,12 @@ function initSearchGraph() {
 
             // STENCIL: determine whether this graph node should be the start
             //   point for the search
-                visit_queue = [];
+            if (q_init[0] == xpos.toFixed(1) && q_init[1] == ypos.toFixed(1)) {
+                var startNode = G[iind][jind];
+                startNode.priority = 0;
+                startNode.distance = 0;
+                minheap_insert(visit_queue, startNode);
+            }
         }
     }
 }
@@ -572,6 +622,57 @@ function insertTreeEdge(tree,q1_idx,q2_idx) {
     // STENCIL: implement min heap functions for graph search priority queue.
     //   These functions work use the 'priority' field for elements in graph.
 
+function minheap_insert(heap, new_element, comparator) {
+    new_element.queued = true;
+    heap.push(new_element);
+    shiftUp(heap, heap.length - 1);
+
+    function shiftUp(heap, index) {
+        if (index <= 0) {
+            return;
+        }
+
+        var parent = Math.floor((index - 1) / 2);
+        if (heap[index].priority < heap[parent].priority) {
+            var tmp = heap[index];
+            heap[index] = heap[parent];
+            heap[parent] = tmp;
+            shiftUp(heap, parent);
+        }
+    }
+}
+
+function minheap_extract(heap, comparator) {
+    if (heap.length <= 0) {
+        return;
+    }
+    if (heap.length === 1) {
+        return heap.pop();
+    }
+
+    var min = heap[0];
+    heap[0] = heap.pop();
+    shiftDown(heap, 0);
+    return min;
+
+    function shiftDown(heap, root) {
+        var left = root * 2 + 1;
+        var right = (root + 1) * 2;
+        var minIndex = root;
+        if (left < heap.length && heap[left].priority < heap[minIndex].priority) {
+            minIndex = left;
+        }
+        if (right < heap.length && heap[right].priority < heap[minIndex].priority) {
+            minIndex = right;
+        }
+        if (minIndex !== root) {
+            var tmp = heap[root];
+            heap[root] = heap[minIndex];
+            heap[minIndex] = tmp;
+            shiftDown(heap, minIndex);
+        }
+    }
+}
 
 
 //////////////////////////////////////////////////
