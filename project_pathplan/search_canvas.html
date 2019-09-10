@@ -289,25 +289,22 @@ function iterateGraphSearch() {
     //   testCollision - returns whether a given configuration is in collision
     //   drawHighlightedPathGraph - draws a path back to the start location
     //   draw_2D_configuration - draws a square at a given location
-    if (search_alg === "depth-first") {
+    if (visit_queue.length !== 0) {
+        var currNode = (search_alg === "depth-first") ? visit_queue.pop() : minheap_extract(visit_queue);
+        currNode.visited = true;
+        search_visited++;
 
-    } else {
-        if (visit_queue.length !== 0) {
-            var currNode = minheap_extract(visit_queue);
-            currNode.visited = true;
-            search_visited++;
-
-            // find goal
-            if (currNode.x.toFixed(1) == q_goal[0] && currNode.y.toFixed(1) == q_goal[1]) {
-                drawHighlightedPathGraph(currNode);
-                search_iterate = false;
-                return "succeeded";
-            }
-
-            searchNearby(currNode);
-            return "iterating";
+        // find goal
+        if (currNode.x.toFixed(1) == q_goal[0] && currNode.y.toFixed(1) == q_goal[1]) {
+            drawHighlightedPathGraph(currNode);
+            search_iterate = false;
+            return "succeeded";
         }
+
+        searchNearby(currNode);
+        return "iterating";
     }
+
     return "failed";
 
     function searchNearby(currNode) {
@@ -344,9 +341,15 @@ function iterateGraphSearch() {
                 if (!nearbyNode.queued || f < nearbyNode.priority) {
                     // alert("f: " + f + "  g: " + g + "  h: " + h);
                     nearbyNode.distance = g;
-                    nearbyNode.priority = f;
                     nearbyNode.parent = currNode;
-                    minheap_insert(visit_queue, nearbyNode);
+
+                    if (search_alg === "depth-first") {
+                        nearbyNode.queued = true;
+                        visit_queue.push(nearbyNode);
+                    } else {
+                        nearbyNode.priority = f;
+                        minheap_insert(visit_queue, nearbyNode);
+                    }
                     draw_2D_configuration([nearbyNode.x, nearbyNode.y]);
                 }
             }
