@@ -125,6 +125,9 @@ function initSearch() {
     q_goal_config = [4,4];
     q_init = q_start_config;
     q_goal = q_goal_config;
+    start = q_start_config;
+    final_goal = q_goal_config;
+    goals = [];
 
     var url_parsed = window.location.href.split("?");
     for (i=1;i<url_parsed.length;i++) {
@@ -146,6 +149,9 @@ function initSearch() {
 
     // initialize graph search algorithms (DFS, BFS, A-star)
     initSearchGraph();
+
+    // flag to init PRM
+    PRM_init = false;
 
     // flag to init potential field algorithm
     potential_init = false;
@@ -231,6 +237,32 @@ function animate() {
             case "greedy-best-first":
             case "A-star":
                 search_result = iterateGraphSearch();
+
+                if (search_result === "succeeded" && goals.length !== 0) {
+                    q_init = q_goal;
+                    q_goal = goals.pop();
+
+                    currNode.priority = 0;
+                    currNode.distance = 0;
+                    currNode.queued = true;
+                    currNode.visited = false;
+                    visit_queue = [currNode];
+
+                    search_iterate = true;
+                    search_result = "iterating";
+
+
+                    c = document.getElementById("myCanvas");
+                    ctx = c.getContext("2d");
+                    ctx.fillStyle = "#00FF00";
+                    ctx.fillRect(xformWorldViewX(final_goal[0])-5,xformWorldViewY(final_goal[1])-5,10,10);
+                }
+                break;
+            case "PRM":
+                while (!PRM_init) {
+                    Graph_PRM = initPRM();
+                }
+                search_alg = "greedy-best-first";
                 break;
             case "Potential":
                 if (!potential_init) {
@@ -244,7 +276,7 @@ function animate() {
             case "RRT":
                 search_result = "failed";
                 // (hack to speed viz)
-                while (search_result == "failed")
+                while (search_result === "failed")
                     search_result = iterateRRT();
                 break;
             case "RRT-connect":
@@ -265,7 +297,7 @@ function animate() {
     textbar.innerHTML =
         search_alg + " progress: " + search_result
         + " <br> "
-        + "start: " + q_init
+        + "start: " + start
         + " | "
         + "goal: " + q_goal
         + " <br> "
@@ -302,7 +334,7 @@ function iterateGraphSearch() {
     //   drawHighlightedPathGraph - draws a path back to the start location
     //   draw_2D_configuration - draws a square at a given location
     if (visit_queue.length !== 0) {
-        var currNode = (search_alg === "depth-first") ? visit_queue.pop() : minheap_extract(visit_queue);
+        currNode = (search_alg === "depth-first") ? visit_queue.pop() : minheap_extract(visit_queue);
         currNode.visited = true;
         search_visited++;
 
@@ -413,6 +445,237 @@ function iterateRRTConnect() {
 
 function iterateRRTStar() {
 
+}
+
+function initPRM() {
+    // constants
+    var N = 200; // the number of samples
+    var K = 5; // k nearest neighbors
+
+    // create graph object
+    graph = {};
+    graph.map = []; // key: hashcode(q), value: index of vertex
+    // initialize with vertex for given configuration
+    graph.vertices = [];
+
+    // generate random samples
+    var samples = {};
+    samples[hashcode(q_init)] = q_init;
+    samples[hashcode(q_goal)] = q_goal;
+    addSamples(samples);
+    while (Object.keys(samples).length < N) {
+        var x = parseFloat((Math.random() * 6 - 1).toFixed(1));
+        var y = parseFloat((Math.random() * 6 - 1).toFixed(1));
+        var q = [x, y];
+        if (!testCollision(q) && !(hashcode(q) in samples)) {
+            samples[hashcode(q)] = q;
+        }
+    }
+
+    // insert samples to graph vertices
+    var keys = Object.keys(samples);
+    for (var i = 0; i < keys.length; i++) {
+        q = samples[keys[i]];
+        insertTreeVertex(graph, q);
+        graph.map[hashcode(q)] = graph.newest;
+        var insertedObj = graph.vertices[graph.newest];
+        insertedObj.parent = null;
+        insertedObj.distance = 10000;
+        insertedObj.visited = false;
+        insertedObj.priority = null;
+        insertedObj.queued = false;
+    }
+
+    // find K nearest neighbors of each sample
+    for (i = 0; i < keys.length; i++) {
+        q = samples[keys[i]];
+
+        var neighbor_distance = [];
+        for (var j = 0; j < keys.length; j++) {
+            var sample = samples[keys[j]];
+            if (sample[0] !== q[0] || sample[1] !== q[1]) {
+                var obj = {};
+                obj.priority = Math.sqrt(Math.pow(sample[0] - q[0], 2) + Math.pow(sample[1] - q[1], 2));
+                obj.sample = sample;
+                minheap_insert(neighbor_distance, obj);
+            }
+        }
+
+        for (j = 0; j < K; j++) {
+            obj = minheap_extract(neighbor_distance);
+            var neighbor = obj.sample;
+            if (!hasEdge(graph, neighbor, q) &&
+                    !hasEdge(graph, q, neighbor) &&
+                    !testEdgeCollision(neighbor, q) &&
+                    !testEdgeCollision(q, neighbor)) {
+                insertTreeEdge(graph, graph.map[hashcode(q)], graph.map[hashcode(neighbor)]);
+            }
+        }
+    }
+
+    // using A-star to find goals
+    var findGoal = false;
+    var visit_queue = [];
+    var currVertexObj = graph.vertices[graph.map[hashcode(q_init)]];
+    currVertexObj.queued = true;
+    currVertexObj.distance = 0;
+    currVertexObj.priority = 0;
+    minheap_insert(visit_queue, currVertexObj);
+
+    while (visit_queue.length !== 0) {
+        currVertexObj = minheap_extract(visit_queue);
+        currVertexObj.visited = true;
+        var currEdges = currVertexObj.edges;
+        var currVertex = currVertexObj.vertex;
+
+        // find goal
+        if (currVertex[0] === q_goal[0] && currVertex[1] === q_goal[1]) {
+            findGoal = true;
+            break;
+        }
+
+        for (i = 0; i < currEdges.length; i++) {
+            var neighborObj = currEdges[i];
+            var neighborVertex = neighborObj.vertex;
+            if (neighborObj.visited === true) {
+                continue;
+            }
+            var g = currVertexObj.distance + Math.abs(neighborVertex[0] - currVertex[0]) + Math.abs(neighborVertex[1] + currVertex[1]);
+            var h = Math.sqrt(Math.pow(neighborVertex[0] - q_goal[0], 2) + Math.pow(neighborVertex[1] + q_goal[1], 2));
+            var priority =  g + h;
+
+            if (neighborObj.distance > g) {
+                neighborObj.distance = g;
+                neighborObj.parent = currVertexObj;
+            }
+
+            if (!neighborObj.queued || priority < neighborObj.priority) {
+                neighborObj.priority = priority;
+                minheap_insert(visit_queue, neighborObj);
+            }
+        }
+    }
+
+    if (!findGoal) {
+        var c = document.getElementById("myCanvas");
+        var context = c.getContext("2d");
+        context.clearRect(0, 0, c.width, c.height);
+        PRM_init = false;
+    } else {
+        currVertexObj = graph.vertices[graph.map[hashcode(q_goal)]];
+        goals.push(currVertexObj.vertex);
+        while (currVertexObj.parent !== null) {
+            currVertexObj = currVertexObj.parent;
+            goals.push(currVertexObj.vertex);
+            drawGoal(currVertexObj.vertex);
+        }
+        goals.pop();
+        q_goal = goals.pop();
+
+        PRM_init = true;
+    }
+
+    return graph;
+}
+
+function containsNode(array, node) {
+    for (var i = 0; i < array.length; i++) {
+        if (array[i][0] === node[0] && array[i][1] === node[1]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function drawGoal(q) {
+    c = document.getElementById("myCanvas");
+    ctx = c.getContext("2d");
+    ctx.fillStyle = "#DC143C";
+    ctx.fillRect(xformWorldViewX(q[0])-5,xformWorldViewY(q[1])-5,10,10);
+}
+
+function hasEdge(graph, q1, q2) {
+    var edges = graph.vertices[graph.map[hashcode(q1)]].edges;
+    for (var i = 0; i < edges.length; i++) {
+        if (edges[i][0] === q2[0] && edges[i][1] === q2[1]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function testEdgeCollision(q1, q2) {
+    var x1 = Math.min(q1[0], q2[0]);
+    var x2 = Math.max(q1[0], q2[0]);
+    var y1 = Math.min(q1[1], q2[1]);
+    var y2 = Math.max(q1[1], q2[1]);
+
+    for (var x = x1; x <= x2; x += eps) {
+        for (var y = y1; y <= y2; y += eps) {
+            if (testCollision([x, y])) {
+                return true;
+            }
+        }
+    }
+    // // for each node lies in line(q1, q2), test collision
+    // if (q1[0] > q2[0]) {
+    //     var tmp = q1;
+    //     q1 = q2;
+    //     q2 = tmp;
+    // }
+    //
+    // if (q1[0].toFixed(1) === q2[0].toFixed(1)) {
+    //     if (q1[1] > q2[1]) {
+    //         tmp = q1;
+    //         q1 = q2;
+    //         q2 = tmp;
+    //     }
+    //     for (var y = q1[1] + eps; y < q2[1]; y += eps) {
+    //         // draw_2D_configuration([q1[0].toFixed(1),y.toFixed(1)]);
+    //         if (testCollision([q1[0], y])) {
+    //             return true;
+    //         }
+    //     }
+    // } else {
+    //     for (var x = q1[0] + eps; x < q2[0]; x += eps) {
+    //         y = (x - q1[0]) * (q2[1] - q1[1]) / (q2[0] - q1[0]) + q1[1];
+    //         // draw_2D_configuration([x.toFixed(1),y.toFixed(1)]);
+    //
+    //         if (testCollision([x, y])) {
+    //             return true;
+    //         }
+    //     }
+    // }
+
+    return false;
+}
+
+function hashcode(q) {
+    return q[0].toFixed(1) + ' ' + q[1].toFixed(1);
+}
+
+function addSamples(samples) {
+    if (planning_scene === "misc") {
+        addSample(samples, [3.6, -0.9]);
+        addSample(samples, [4.0, -0.9]);
+    } else if (planning_scene === "narrow1") {
+        addSample(samples, [1.0, 3.9]);
+        addSample(samples, [1.5, 3.9]);
+        addSample(samples, [2.0, 3.9]);
+    } else if (planning_scene === "narrow2") {
+        addSample(samples, [1.0, 3.9]);
+        addSample(samples, [1.6, 3.9]);
+        addSample(samples, [2.0, 3.9]);
+        addSample(samples, [2.0, 3.2]);
+        addSample(samples, [2.0, 2.5]);
+        addSample(samples, [2.0, 2.1]);
+        addSample(samples, [2.6, 2.1]);
+        addSample(samples, [3.0, 2.1]);
+    }
+}
+
+function addSample(samples, sample) {
+    samples[hashcode(sample)] = sample;
 }
 
 function initPotential() {
@@ -590,7 +853,7 @@ function drawHighlightedPathGraph(current_node) {
     ctx.strokeStyle="#0000FF";
     ctx.lineWidth=4;
     ctx.beginPath();
-    path_length = 0;
+    // path_length = 0;
     q_path_ref = current_node;
     while (q_path_ref.distance > 0) {
         // KE: find cleaner way to draw edges
