@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report for Assignment 1: Path Planning</title>
+    <style type="text/css">
+        table{ border-collapse:collapse; border:solid 1px Black; }
+        table td{ /*width:50px; height:20px;*/  border:solid 1px Black; padding:5px; text-align: center}
+        .circle {
+            margin: auto;
+            width: 15px;
+            height: 15px;
+            background: red;
+            -moz-border-radius: 50px;
+            -webkit-border-radius: 50px;
+            border-radius: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<h3>Report for Assignment 1: Path Planning</h3>
+<span id="gif_title" style="font-size: medium; font-weight: bold">
+    search_alg = <span id="search_alg" style="color: red">A-star</span>,
+    planning_scene = <span id="planning_scene" style="color: red">narrow2</span>,
+    start = <span id="start" style="color: red">[0, 0]</span>,
+    goal = <span id="goal" style="color: red">[4, 4]</span>
+</span>
+<br>
+<img id="gif" src="images/A-star_narrow2_1.gif" style="width: 350px; height: 350px">
+<table>
+    <tr>
+        <td colspan="16" style="font-size: large; font-weight: bold; color: red">Click the red circles to switch GIFs</td>
+    </tr>
+    <tr>
+        <td rowspan="2">start:(0, 0) <br> goal:(4, 4)</td>
+        <td colspan="3">empty</td>
+        <td colspan="3">misc</td>
+        <td colspan="3">narrow1</td>
+        <td colspan="3">narrow2</td>
+        <td colspan="3">three_sections</td>
+    </tr>
+    <tr>
+        <td>interations</td>
+        <td>path length</td>
+        <td>GIF</td>
+
+        <td>interations</td>
+        <td>path length</td>
+        <td>GIF</td>
+
+        <td>interations</td>
+        <td>path length</td>
+        <td>GIF</td>
+
+        <td>interations</td>
+        <td>path length</td>
+        <td>GIF</td>
+
+        <td>interations</td>
+        <td>path length</td>
+        <td>GIF</td>
+    </tr>
+    <tr>
+        <td>A-star</td>
+
+        <td>2240</td>
+        <td>8</td>
+        <td><div class="circle" onclick="show('A-star', 'empty', 1)"></div></td>
+
+        <td>2693</td>
+        <td>9.8</td>
+        <td><div class="circle" onclick="show('A-star', 'misc', 1)"></div></td>
+
+        <td>932</td>
+        <td>8</td>
+        <td><div class="circle" onclick="show('A-star', 'narrow1', 1)"></div></td>
+
+        <td>1527</td>
+        <td>11.4</td>
+        <td><div class="circle" onclick="show('A-star', 'narrow2', 1)"></div></td>
+
+        <td>2415</td>
+        <td>14.2</td>
+        <td><div class="circle" onclick="show('A-star', 'three_sections', 1)"></div></td>
+    </tr>
+    <tr>
+        <td>Greedy-best-first</td>
+
+        <td>81</td>
+        <td>8</td>
+        <td><div class="circle" onclick="show('greedy-best-first', 'empty', 1)"></div></td>
+
+        <td>2073</td>
+        <td>17.8</td>
+        <td><div class="circle" onclick="show('greedy-best-first', 'misc', 1)"></div></td>
+
+        <td>81</td>
+        <td>8</td>
+        <td><div class="circle" onclick="show('greedy-best-first', 'narrow1', 1)"></div></td>
+
+        <td>138</td>
+        <td>11.4</td>
+        <td><div class="circle" onclick="show('greedy-best-first', 'narrow2', 1)"></div></td>
+
+        <td>906</td>
+        <td>14.2</td>
+        <td><div class="circle" onclick="show('greedy-best-first', 'three_sections', 1)"></div></td>
+    </tr>
+    <tr>
+        <td>BFS</td>
+
+        <td>3492</td>
+        <td>8</td>
+        <td><div class="circle" onclick="show('breadth-first', 'empty', 1)"></div></td>
+
+        <td>3230</td>
+        <td>9.8</td>
+        <td><div class="circle" onclick="show('breadth-first', 'misc', 1)"></div></td>
+
+        <td>1588</td>
+        <td>8</td>
+        <td><div class="circle" onclick="show('breadth-first', 'narrow1', 1)"></div></td>
+
+        <td>2107</td>
+        <td>11.4</td>
+        <td><div class="circle" onclick="show('breadth-first', 'narrow2', 1)"></div></td>
+
+        <td>3161</td>
+        <td>14.2</td>
+        <td><div class="circle" onclick="show('breadth-first', 'three_sections', 1)"></div></td>
+    </tr>
+    <tr>
+        <td>DFS</td>
+
+        <td>1281</td>
+        <td>128</td>
+        <td><div class="circle" onclick="show('depth-first', 'empty', 1)"></div></td>
+
+        <td>2691</td>
+        <td>66.4</td>
+        <td><div class="circle" onclick="show('depth-first', 'misc', 1)"></div></td>
+
+        <td>443</td>
+        <td>44.2</td>
+        <td><div class="circle" onclick="show('depth-first', 'narrow1', 1)"></div></td>
+
+        <td>876</td>
+        <td>64.4</td>
+        <td><div class="circle" onclick="show('depth-first', 'narrow2', 1)"></div></td>
+
+        <td>1504</td>
+        <td>105.4</td>
+        <td><div class="circle" onclick="show('depth-first', 'three_sections', 1)"></div></td>
+    </tr>
+    <tr>
+        <td>PRM</td>
+
+        <td>122</td>
+        <td>10.2</td>
+        <td><div class="circle" onclick="show('PRM', 'empty', 1)"></div></td>
+
+        <td>165</td>
+        <td>14</td>
+        <td><div class="circle" onclick="show('PRM', 'misc', 1)"></div></td>
+
+        <td>136</td>
+        <td>11.2</td>
+        <td><div class="circle" onclick="show('PRM', 'narrow1', 1)"></div></td>
+
+        <td>175</td>
+        <td>14.8</td>
+        <td><div class="circle" onclick="show('PRM', 'narrow2', 1)"></div></td>
+
+        <td>272</td>
+        <td>23</td>
+        <td><div class="circle" onclick="show('PRM', 'three_sections', 1)"></div></td>
+    </tr>
+    <tr>
+        <td>Potential Field</td>
+
+        <td>81</td>
+        <td>8</td>
+        <td><div class="circle" onclick="show('Potential', 'empty', 1)"></div></td>
+
+        <td>2797</td>
+        <td>15.2</td>
+        <td><div class="circle" onclick="show('Potential', 'misc', 1)"></div></td>
+
+        <td>1131</td>
+        <td>8.4</td>
+        <td><div class="circle" onclick="show('Potential', 'narrow1', 1)"></div></td>
+
+        <td>1181</td>
+        <td>11.6</td>
+        <td><div class="circle" onclick="show('Potential', 'narrow2', 1)"></div></td>
+
+        <td>839</td>
+        <td>15</td>
+        <td><div class="circle" onclick="show('Potential', 'three_sections', 1)"></div></td>
+    </tr>
+    <tr>
+        <td>Wavefront</td>
+
+        <td>3501</td>
+        <td>8</td>
+        <td><div class="circle" onclick="show('Wavefront', 'empty', 1)"></div></td>
+
+        <td>3226</td>
+        <td>9.8</td>
+        <td><div class="circle" onclick="show('Wavefront', 'misc', 1)"></div></td>
+
+        <td>1574</td>
+        <td>8</td>
+        <td><div class="circle" onclick="show('Wavefront', 'narrow1', 1)"></div></td>
+
+        <td>2105</td>
+        <td>11.4</td>
+        <td><div class="circle" onclick="show('Wavefront', 'narrow2', 1)"></div></td>
+
+        <td>3165</td>
+        <td>14.2</td>
+        <td><div class="circle" onclick="show('Wavefront', 'three_sections', 1)"></div></td>
+    </tr>
+</table>
+
+</body>
+<script>
+    window.onload = function () {
+        var elements = document.getElementsByClassName('circle');
+        for (var i = 0; i < elements.length; i++) {
+            elements[i].addEventListener("mouseover", function () {
+                this.style = "cursor: pointer;";
+            })
+        }
+    };
+
+    function show(alg, scene, flag) {
+        var img = document.getElementById('gif');
+        img.src = 'images/' + alg + '_' + scene + '_' + flag + '.gif';
+        document.getElementById('search_alg').innerHTML = alg;
+        document.getElementById('planning_scene').innerHTML = scene;
+        document.getElementById('start').innerHTML = (flag === 1 ? '[0, 0]' : '[4, 0]');
+        document.getElementById('goal').innerHTML = (flag === 1 ? '[4, 4]' : '[0, 4]');
+    }
+</script>
+</html>
