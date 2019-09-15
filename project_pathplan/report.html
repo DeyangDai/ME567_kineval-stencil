@@ -223,6 +223,54 @@
         <td><div class="circle" onclick="show('Wavefront', 'three_sections', 1)"></div></td>
     </tr>
 </table>
+<br>
+<div style="padding-right: 200px">
+    Findings:<br>
+    <ol>
+        <li>
+            A-star selects the path that minimizes
+            f(n) = g(n) + h(n),
+            where n is the next node on the path, g(n) is the cost of the path from the start node to n,
+            and h(n) is a heuristic function that estimates the cost of the cheapest path from n to the goal.
+            The h(n) function we use here is Euclidean distance.
+            As the experiments show, A-star calculates the shortest path, but the number of iterations is high.
+            It also depends on the choice of the heuristic function.<br><br>
+        </li>
+        <li>
+            Greedy-best-first is a pure heuristic search algorithm. It selects the path that minimizes f(n) = h(n).
+            Efficient selection of the current best candidate for extension is implemented using a priority queue.
+            In general, this algorithm is very efficient.
+            But if it encounters a barrier, the efficiency of the algorithm will drop dramatically.<br><br>
+        </li>
+        <li>
+            BFS selects the path that minimizes f(n) = g(n). It always finds the shortest path.
+            However, This algorithm is not efficient and requires a lot of iterations.<br><br>
+        </li>
+        <li>
+            DFS is a recursive algorithm that uses the idea of backtracking.
+            This recursive nature of DFS can be implemented using stacks.
+            The algorithm starts at the root node and explores as far as possible along each branch before exploring nearby branches.
+            Usually it is not efficient.
+            The efficiency of the algorithm depends on the choice of starting point and target point,
+            and the order in which each direction is explored.<br><br>
+        </li>
+        <li>
+            PRM is a sampling-based path planning algorithm. It consists of two phases: a construction and a query phase.
+            In the construction phase, a random graph is built, approximating the paths that can be traversed in the environment.
+            Configurations and connections are added to the graph until the roadmap is dense enough.
+            In the query phase, the path is obtained by A-star algorithm.
+            It performs well on both the number of iterations and the length of the path.<br><br>
+        </li>
+        <li>
+            Potential field algorithm selects the path that minimizes f(n) = Force_Repulsion(n) - Force_Attraction(n).
+            It is very likely to get stuck in local minima situations.
+            And it’s not good for maps with narrow passages. <br><br>
+        </li>
+        <li>
+            Wavefront algorithm is similar to BFS.
+        </li>
+    </ol>
+</div>
 
 </body>
 <script>
