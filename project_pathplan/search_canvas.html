@@ -340,7 +340,7 @@ function iterateGraphSearch() {
         search_visited++;
 
         // find goal
-        if (isEqualNode([currNode.x, currNode.y], q_goal)/*currNode.x.toFixed(1) == q_goal[0] && currNode.y.toFixed(1) == q_goal[1]*/) {
+        if (isEqualNode([currNode.x, currNode.y], q_goal)) {
             search_iterate = false;
             drawHighlightedPathGraph(currNode);
             return "succeeded";
@@ -498,7 +498,7 @@ function initPRM() {
         var neighbor_distance = [];
         for (var j = 0; j < keys.length; j++) {
             var sample = samples[keys[j]];
-            if (!isEqualNode(sample, q)/*sample[0] !== q[0] || sample[1] !== q[1]*/) {
+            if (!isEqualNode(sample, q)) {
                 var obj = {};
                 obj.priority = Math.sqrt(Math.pow(sample[0] - q[0], 2) + Math.pow(sample[1] - q[1], 2));
                 obj.sample = sample;
@@ -534,7 +534,7 @@ function initPRM() {
         var currVertex = currVertexObj.vertex;
 
         // find goal
-        if (isEqualNode(currVertex, q_goal)/*currVertex[0] === q_goal[0] && currVertex[1] === q_goal[1]*/) {
+        if (isEqualNode(currVertex, q_goal)) {
             findGoal = true;
             break;
         }
@@ -589,7 +589,7 @@ function isEqualNode(q1, q2) {
 
 function containsNode(array, node) {
     for (var i = 0; i < array.length; i++) {
-        if (isEqualNode(array[i], node)/*array[i][0] === node[0] && array[i][1] === node[1]*/) {
+        if (isEqualNode(array[i], node)) {
             return true;
         }
     }
@@ -606,7 +606,7 @@ function drawGoal(q) {
 function hasEdge(graph, q1, q2) {
     var edges = graph.vertices[graph.map[hashcode(q1)]].edges;
     for (var i = 0; i < edges.length; i++) {
-        if (isEqualNode(edges[i].vertex, q2)/*edges[i][0] === q2[0] && edges[i][1] === q2[1]*/) {
+        if (isEqualNode(edges[i].vertex, q2)) {
             return true;
         }
     }
@@ -701,7 +701,7 @@ function iteratePotential() {
         search_visited++;
 
         // find goal
-        if (isEqualNode([currNode.x, currNode.y], q_goal)/*currNode.x.toFixed(1) == q_goal[0] && currNode.y.toFixed(1) == q_goal[1]*/) {
+        if (isEqualNode([currNode.x, currNode.y], q_goal)) {
             search_iterate = false;
             drawHighlightedPathGraph(currNode);
             return "succeeded";
@@ -748,7 +748,7 @@ function iterateWavefront() {
         search_visited++;
 
         // find goal
-        if (isEqualNode([currNode.x, currNode.y], q_goal)/*currNode.x.toFixed(1) == q_goal[0] && currNode.y.toFixed(1) == q_goal[1]*/) {
+        if (isEqualNode([currNode.x, currNode.y], q_goal)) {
             search_iterate = false;
             drawHighlightedPathGraph(currNode);
             return "succeeded";
@@ -877,7 +877,7 @@ function initSearchGraph() {
 
             // STENCIL: determine whether this graph node should be the start
             //   point for the search
-            if (isEqualNode(q_init, [xpos, ypos])/*q_init[0] == xpos.toFixed(1) && q_init[1] == ypos.toFixed(1)*/) {
+            if (isEqualNode(q_init, [xpos, ypos])) {
                 var startNode = G[iind][jind];
                 startNode.priority = 0;
                 startNode.distance = 0;
