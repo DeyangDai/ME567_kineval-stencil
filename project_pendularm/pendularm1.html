@@ -80,7 +80,7 @@ function init() {
     dt = 0.05;  // default
  
     // initialize method of numerical integration of dynamics
-    //numerical_integrator = "euler";
+    numerical_integrator = "euler";
     //numerical_integrator = "verlet";
     //numerical_integrator = "velocity verlet";
     //numerical_integrator = "runge-kutta";
@@ -142,6 +142,16 @@ function animate() {
         pendulum.control += -50.0; // add a motor force to the pendulum motor
 
     // STENCIL: implement servo controller
+    if (servo_active_state === "active" && numerical_integrator !== "none") {
+        var err = pendulum.desired - pendulum.angle;
+        var P_portion = pendulum.servo.kp * err;
+        var I_portion = pendulum.servo.ki * accumulated_error;
+        var D_portion = pendulum.servo.kd * (pendulum.desired_dot - pendulum.angle_dot);
+        accumulated_error += err * dt;
+        pendulum.control = P_portion + I_portion + D_portion;
+    } else {
+        accumulated_error = 0;
+    }
 
     // toggle activation of servo controller from user interaction
     if (keyboard.pressed("c"))
@@ -164,7 +174,15 @@ function animate() {
     if (numerical_integrator === "euler") {
 
     // STENCIL: a correct Euler integrator is REQUIRED for assignment
+        pendulum.servo = {kp:6, kd:7, ki:6};
+        servo_active_state = "active";
+        servo_active_persist = true;
+        // pendulum.desired = Math.PI;
 
+        var acc = pendulum_acceleration(pendulum.angle, pendulum.control);
+        pendulum.angle_previous = pendulum.angle;
+        pendulum.angle = angle_mapping(pendulum.angle_previous + pendulum.angle_dot * dt);
+        pendulum.angle_dot += acc * dt;
     }
     else if (numerical_integrator === "verlet") {
 
@@ -237,8 +255,20 @@ function animate() {
 
 }
 
+function angle_mapping(angle) {
+    angle %= 2 * Math.PI;
+    if (angle < 0) {
+        angle = 2 * Math.PI + angle;
+    }
+    if (angle > Math.PI) {
+        angle -= 2 * Math.PI;
+    }
+    return angle;
+}
+
 function pendulum_acceleration(p,g) {
-    // STENCIL: return acceleration(s) system equation(s) of motion 
+    // STENCIL: return acceleration(s) system equation(s) of motion
+    return -gravity * Math.sin(p) / pendulum.length + g / (pendulum.mass * Math.pow(pendulum.length, 2));
 }
 
 function createScene() {
