@@ -90,6 +90,8 @@ function init() {
     servo_error_threshold = 0.001; // threshold for achieving desired
     servo_active_persist = false; // toggle to turn on servo controller
     servo_active_state = {}; // string with current state of servo activation
+    t_mode = false;
+    t_log = t;
 
     //STENCIL: for verlet integration, a first step in time is needed
     pendulum.angle_previous = pendulum.angle;
@@ -154,19 +156,35 @@ function animate() {
         var I_portion = pendulum.servo.ki * accumulated_error;
         var D_portion = pendulum.servo.kd * (pendulum.desired_dot - pendulum.angle_dot);
         pendulum.control = P_portion + I_portion + D_portion;
+
+        if (err < servo_error_threshold && t_mode) {
+            num_achieved_setpoints++;
+            t_mode = false;
+        }
     } else {
         accumulated_error = 0;
     }
 
+    if (keyboard.pressed("t") && t - t_log > 1) {
+        t_mode = true;
+        t_log = t;
+        pendulum.desired = Math.random() * 2 * Math.PI;
+        servo_active_persist = true;
+    }
+
     // toggle activation of servo controller from user interaction
-    if (keyboard.pressed("c"))
+    if (keyboard.pressed("c") && t - t_log > 1) {
+        t_log = t;
         servo_active_persist = !servo_active_persist;
+    }
 
     // disable motor from user interaction 
     if (keyboard.pressed("s")||!servo_active_persist) {
         pendulum.control = 0;
         accumulated_error = 0;
         servo_active_state = "disabled";
+        num_achieved_setpoints = 0;
+        t_mode = false;
     }
     else
         servo_active_state = "active";
@@ -281,8 +299,11 @@ function animate() {
         "<br>" +
         " c|x - toggle servo " +
         "<br>" +
-        " s - disable servo "
-
+        " s - disable servo " +
+        "<br>" +
+        " t - generate a random desired setpoint " +
+        "<br><br>  <div style='color: red'>The number of achieved setpoints: " +
+        num_achieved_setpoints + "</div>"
     ;
 
     // threejs rendering update
