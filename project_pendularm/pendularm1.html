@@ -147,12 +147,12 @@ function animate() {
         pid_reset();
     }
     if (servo_active_state === "active" && numerical_integrator !== "none") {
-        pendulum.servo = {kp: 500, kd: 100, ki: 20};
+        pendulum.servo = {kp: 400, kd: 100, ki: 20};
         var err = pendulum.desired - pendulum.angle;
+        accumulated_error += err * dt;
         var P_portion = pendulum.servo.kp * err;
         var I_portion = pendulum.servo.ki * accumulated_error;
         var D_portion = pendulum.servo.kd * (pendulum.desired_dot - pendulum.angle_dot);
-        accumulated_error += err * dt;
         pendulum.control = P_portion + I_portion + D_portion;
     } else {
         accumulated_error = 0;
