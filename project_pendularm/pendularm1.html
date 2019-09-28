@@ -179,32 +179,35 @@ function animate() {
     if (numerical_integrator === "euler") {
 
     // STENCIL: a correct Euler integrator is REQUIRED for assignment
-
         var acc = pendulum_acceleration(pendulum.angle, pendulum.control);
         pendulum.angle_previous = pendulum.angle;
         pendulum.angle = pendulum.angle_previous + pendulum.angle_dot * dt;
-        // pendulum.angle = angle_mapping(pendulum.angle_previous + pendulum.angle_dot * dt);
         pendulum.angle_dot += acc * dt;
     }
     else if (numerical_integrator === "verlet") {
 
     // STENCIL: basic Verlet integration
-
-        var tmp = pendulum.angle;
-        var acc = pendulum_acceleration(pendulum.angle, pendulum.control);
-        pendulum.angle = 2 * pendulum.angle - pendulum.angle_previous + acc * dt * dt;
-        // pendulum.angle = angle_mapping(pendulum.angle);
-        pendulum.angle_dot += acc * dt;
-        pendulum.angle_previous = tmp;
+        var angle = pendulum.angle;
+        var angle_prev = pendulum.angle_previous;
+        var acc = pendulum_acceleration(angle, pendulum.control);
+        pendulum.angle = 2 * angle - angle_prev + acc * dt * dt;
+        pendulum.angle_dot = (pendulum.angle - angle_prev) / (2 * dt);
+        pendulum.angle_previous = angle;
     }
     else if (numerical_integrator === "velocity verlet") {
 
     // STENCIL: a correct velocity Verlet integrator is REQUIRED for assignment
-
+        pendulum.angle_previous = pendulum.angle;
+        var v_prev = pendulum.angle_dot;
+        var acc_prev = pendulum_acceleration(pendulum.angle_previous, pendulum.control);
+        pendulum.angle = pendulum.angle_previous + v_prev * dt + acc_prev * dt * dt / 2;
+        var acc = pendulum_acceleration(pendulum.angle, pendulum.control);
+        pendulum.angle_dot = v_prev + (acc_prev + acc) * dt / 2;
     }
     else if (numerical_integrator === "runge-kutta") {
 
     // STENCIL: Runge-Kutta 4 integrator
+
     } 
     else {
         pendulum.angle_previous = pendulum.angle;
@@ -266,17 +269,6 @@ function animate() {
 function pid_reset() {
     pendulum.servo = {kp:0, kd:0, ki:0};
 }
-
-// function angle_mapping(angle) {
-//     angle %= 2 * Math.PI;
-//     if (angle < 0) {
-//         angle = 2 * Math.PI + angle;
-//     }
-//     if (angle > Math.PI) {
-//         angle -= 2 * Math.PI;
-//     }
-//     return angle;
-// }
 
 function pendulum_acceleration(p,g) {
     // STENCIL: return acceleration(s) system equation(s) of motion
