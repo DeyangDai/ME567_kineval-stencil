@@ -80,7 +80,7 @@ function init() {
     dt = 0.05;  // default
  
     // initialize method of numerical integration of dynamics
-    numerical_integrator = "euler";
+    // numerical_integrator = "euler";
     //numerical_integrator = "verlet";
     //numerical_integrator = "velocity verlet";
     //numerical_integrator = "runge-kutta";
@@ -92,6 +92,7 @@ function init() {
     servo_active_state = {}; // string with current state of servo activation
 
     //STENCIL: for verlet integration, a first step in time is needed
+    pendulum.angle_previous = pendulum.angle;
 
     document.addEventListener('keydown', function(e) {
         if (e.keyCode == 88)  // 'x' == 88
@@ -142,7 +143,11 @@ function animate() {
         pendulum.control += -50.0; // add a motor force to the pendulum motor
 
     // STENCIL: implement servo controller
+    if (servo_active_state !== "active") {
+        pid_reset();
+    }
     if (servo_active_state === "active" && numerical_integrator !== "none") {
+        pendulum.servo = {kp: 500, kd: 100, ki: 20};
         var err = pendulum.desired - pendulum.angle;
         var P_portion = pendulum.servo.kp * err;
         var I_portion = pendulum.servo.ki * accumulated_error;
@@ -174,20 +179,23 @@ function animate() {
     if (numerical_integrator === "euler") {
 
     // STENCIL: a correct Euler integrator is REQUIRED for assignment
-        pendulum.servo = {kp:6, kd:7, ki:6};
-        servo_active_state = "active";
-        servo_active_persist = true;
-        // pendulum.desired = Math.PI;
 
         var acc = pendulum_acceleration(pendulum.angle, pendulum.control);
         pendulum.angle_previous = pendulum.angle;
-        pendulum.angle = angle_mapping(pendulum.angle_previous + pendulum.angle_dot * dt);
+        pendulum.angle = pendulum.angle_previous + pendulum.angle_dot * dt;
+        // pendulum.angle = angle_mapping(pendulum.angle_previous + pendulum.angle_dot * dt);
         pendulum.angle_dot += acc * dt;
     }
     else if (numerical_integrator === "verlet") {
 
     // STENCIL: basic Verlet integration
 
+        var tmp = pendulum.angle;
+        var acc = pendulum_acceleration(pendulum.angle, pendulum.control);
+        pendulum.angle = 2 * pendulum.angle - pendulum.angle_previous + acc * dt * dt;
+        // pendulum.angle = angle_mapping(pendulum.angle);
+        pendulum.angle_dot += acc * dt;
+        pendulum.angle_previous = tmp;
     }
     else if (numerical_integrator === "velocity verlet") {
 
@@ -255,16 +263,20 @@ function animate() {
 
 }
 
-function angle_mapping(angle) {
-    angle %= 2 * Math.PI;
-    if (angle < 0) {
-        angle = 2 * Math.PI + angle;
-    }
-    if (angle > Math.PI) {
-        angle -= 2 * Math.PI;
-    }
-    return angle;
+function pid_reset() {
+    pendulum.servo = {kp:0, kd:0, ki:0};
 }
+
+// function angle_mapping(angle) {
+//     angle %= 2 * Math.PI;
+//     if (angle < 0) {
+//         angle = 2 * Math.PI + angle;
+//     }
+//     if (angle > Math.PI) {
+//         angle -= 2 * Math.PI;
+//     }
+//     return angle;
+// }
 
 function pendulum_acceleration(p,g) {
     // STENCIL: return acceleration(s) system equation(s) of motion
