@@ -177,6 +177,13 @@ function generate_rotation_matrix_Z(theta) {
             [              0,                0, 0, 1]];
 }
 
+function generate_transformation(xyz, rpy) {
+    return matrix_multiply(generate_translation_matrix(xyz[0], xyz[1], xyz[2]),
+        matrix_multiply(generate_rotation_matrix_X(rpy[0]),
+            matrix_multiply(generate_rotation_matrix_Y(rpy[1]),
+                generate_rotation_matrix_Z(rpy[2]))));
+}
+
 ///////////// ADVANCED EXTENSIONS //////////////////
 function matrix_inverse(A) {
     // A: n x n matrix
