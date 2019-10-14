@@ -345,7 +345,7 @@ function iterateGraphSearch() {
 
         return "iterating";
     }
-
+    search_iterate = false;
     return "failed";
 
     function searchNearby(currNode) {
@@ -475,6 +475,9 @@ function initPRM() {
     while (Object.keys(samples).length < N) {
         var x = parseFloat((Math.random() * 6 - 1).toFixed(1));
         var y = parseFloat((Math.random() * 6 - 1).toFixed(1));
+        if (10*(x + 2) % (10 * eps) !== 0 || 10*(y + 2) % (10 * eps) !== 0) {
+            continue;
+        }
         var q = [x, y];
         if (!testCollision(q) && !(hashcode(q) in samples)) {
             samples[hashcode(q)] = q;
@@ -635,7 +638,15 @@ function testEdgeCollision(q1, q2) {
 }
 
 function hashcode(q) {
-    return q[0].toFixed(1) + ' ' + q[1].toFixed(1);
+    var hash1 = q[0].toFixed(1);
+    var hash2 = q[1].toFixed(1);
+    if (hash1 === '-0.0') {
+        hash1 = '0.0';
+    }
+    if (hash2 === '-0.0') {
+        hash2 = '0.0';
+    }
+    return hash1 + ' ' + hash2;
 }
 
 function addSamples(samples) {
@@ -714,7 +725,7 @@ function iteratePotential() {
         searchNearby(currNode);
         return "iterating";
     }
-
+    search_iterate = false;
     return "failed";
 
     function searchNearby(currNode) {
@@ -761,7 +772,7 @@ function iterateWavefront() {
         searchNearby(currNode);
         return "iterating";
     }
-
+    search_iterate = false;
     return "failed";
 
     function searchNearby(currNode) {
