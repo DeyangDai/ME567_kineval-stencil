@@ -16,15 +16,15 @@ function quaternion_from_axisangle(axisangle, theta) {
 }
 
 function quaternion_normalize(q) {
-    var norm = Math.sqrt(q[0]^2 + q[1]^2 + q[2]^2 + q[3]^2);
+    var norm = Math.sqrt(Math.pow(q[0], 2) + Math.pow(q[1], 2) + Math.pow(q[2], 2) + Math.pow(q[3], 2));
     return [q[0] / norm, q[1] / norm, q[2] / norm, q[3] / norm];
 }
 
 function quaternion_to_rotation_matrix(q) {
-    return [[q[0]^2 + q[1]^2 + q[2]^2 + q[3]^2,         2*(q[1]*q[2] - q[0]*q[3]),         2*(q[0]*q[2] + q[1]*q[3]), 0],
-            [        2*(q[1]*q[2] + q[0]*q[3]), q[0]^2 - q[1]^2 + q[2]^2 - q[3]^2,         2*(q[2]*q[3] - q[0]*q[1]), 0],
-            [        2*(q[1]*q[3] - q[0]*q[2]),         2*(q[0]*q[1] + q[2]*q[3]), q[0]^2 - q[1]^2 - q[2]^2 + q[3]^2, 0],
-            [                                0,                                 0,                                 0, 1]];
+    return [[q[0]*q[0] + q[1]*q[1] - q[2]*q[2] - q[3]*q[3], 2*(q[1]*q[2] - q[0]*q[3]), 2*(q[0]*q[2] + q[1]*q[3]), 0],
+            [2*(q[1]*q[2] + q[0]*q[3]), q[0]*q[0] - q[1]*q[1] + q[2]*q[2] - q[3]*q[3], 2*(q[2]*q[3] - q[0]*q[1]), 0],
+            [2*(q[1]*q[3] - q[0]*q[2]), 2*(q[0]*q[1] + q[2]*q[3]), q[0]*q[0] - q[1]*q[1] - q[2]*q[2] + q[3]*q[3], 0],
+            [0, 0, 0, 1]];
 }
 
 function quaternion_multiply(q1, q2) {

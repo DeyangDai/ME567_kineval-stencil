@@ -34,7 +34,13 @@ kineval.applyControls = function robot_apply_controls(curRobot) {
         }
 
     // STENCIL: enforce joint limits for prismatic and revolute joints
-
+        if (curRobot.joints[x].type === 'revolute' || curRobot.joints[x].type === 'prismatic') {
+            if (curRobot.joints[x].angle > curRobot.joints[x].limit.upper) {
+                curRobot.joints[x].angle = curRobot.joints[x].limit.upper;
+            } else if (curRobot.joints[x].angle < curRobot.joints[x].limit.lower) {
+                curRobot.joints[x].angle = curRobot.joints[x].limit.lower;
+            }
+        }
 
         // clear controls back to zero for next timestep
         curRobot.joints[x].control = 0;

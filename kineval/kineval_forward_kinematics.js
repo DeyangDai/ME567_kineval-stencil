@@ -85,7 +85,20 @@ function traverseFKLink(link_name) {
 function traverseFKJoint(joint_name) {
     var joint = robot.joints[joint_name];
     var T = generate_transformation(joint.origin.xyz, joint.origin.rpy);
-    var xform = matrix_multiply(mstack[mstack.length - 1], T);
+    var jointMotion;
+    if ((!robot.links_geom_imported && joint.type === undefined)
+            || joint.type === "revolute"
+            || joint.type === "continuous") {
+        jointMotion = quaternion_to_rotation_matrix(
+            quaternion_normalize(quaternion_from_axisangle(joint.axis, joint.angle))
+        );
+    } else if (joint.type === "prismatic") {
+        jointMotion = generate_translation_matrix(
+            joint.angle*joint.axis[0], joint.angle*joint.axis[1], joint.angle*joint.axis[2]);
+    } else {
+        jointMotion = generate_identity(4);
+    }
+    var xform = matrix_multiply(matrix_multiply(mstack[mstack.length - 1], T), jointMotion);
 
     mstack.push(xform);
     joint.xform = mstack[mstack.length - 1];

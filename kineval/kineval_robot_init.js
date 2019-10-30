@@ -21,6 +21,7 @@ kineval.initRobot = function initRobot() {
     // initialize robot collision state
     robot.collision = false;
 
+    lastTime = new Date();
 }
 
 kineval.initRobotLinks = function initRobotLinks() {
@@ -51,7 +52,7 @@ kineval.initRobotJoints = function initRobotJoints() {
         robot.joints[x].control = 0;
         robot.joints[x].servo = {};
     // STENCIL: set appropriate servo gains for arm setpoint control
-        robot.joints[x].servo.p_gain = 0; 
+        robot.joints[x].servo.p_gain = 0.1;
         robot.joints[x].servo.p_desired = 0;
         robot.joints[x].servo.d_gain = 0; 
 
