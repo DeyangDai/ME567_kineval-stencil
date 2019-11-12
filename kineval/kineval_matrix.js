@@ -121,6 +121,17 @@ function vector_normalize(a) {
     return res;
 }
 
+function vector_substract(a, b) {
+    // a: nx1 vector
+    // b: nx1 vector
+    // return a - b: nx1 vector
+    var res = [];
+    for (var i = 0; i < a.length; i++) {
+        res.push(a[i] - b[i]);
+    }
+    return res;
+}
+
 function vector_cross(a, b) {
     // a: 3x1 vector
     // b: 3x1 vector
@@ -182,6 +193,30 @@ function generate_transformation(xyz, rpy) {
         matrix_multiply(generate_rotation_matrix_Z(rpy[2]),
             matrix_multiply(generate_rotation_matrix_Y(rpy[1]),
                 generate_rotation_matrix_X(rpy[0]))));
+}
+
+function rotation_matrix_to_axisangle(R) {
+    var R00 = R[0][0], R01 = R[0][1], R02 = R[0][2];
+    var R10 = R[1][0], R11 = R[1][1], R12 = R[1][2];
+    var R20 = R[2][0], R21 = R[2][1], R22 = R[2][2];
+
+    var thetaX, thetaY, thetaZ;
+    if (R02 < 1) {
+        if (R02 > -1) {
+            thetaY = Math.asin(R02);
+            thetaX = Math.atan2(-R12, R22);
+            thetaZ = Math.atan2(-R01, R00);
+        } else {
+            thetaY = -Math.PI / 2;
+            thetaX = -Math.atan2(R10, R11);
+            thetaZ = 0;
+        }
+    } else {
+        thetaY = Math.PI / 2;
+        thetaX = Math.atan2(R10, R11);
+        thetaZ = 0;
+    }
+    return [thetaX, thetaY, thetaZ];
 }
 
 ///////////// ADVANCED EXTENSIONS //////////////////
