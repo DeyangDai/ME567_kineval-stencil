@@ -110,7 +110,10 @@ kineval.iterateIK = function iterate_inverse_kinematics(endeffector_target_world
 
     var delta_q;
     if (kineval.params.ik_pseudoinverse) {
-        delta_q = matrix_multiply(numeric.inv(J), delta_x);
+        // var pseudoinverse = numeric.inv(matrix_multiply(J, matrix_transpose(J)));
+        // delta_q = matrix_multiply(matrix_multiply(matrix_transpose(J), pseudoinverse), delta_x);
+        var pseudoinverse = matrix_pseudoinverse(J);
+        delta_q = matrix_multiply(pseudoinverse, delta_x);
     } else {
         delta_q = matrix_multiply(matrix_transpose(J), delta_x);
     }

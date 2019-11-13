@@ -70,9 +70,9 @@ function matrix_pseudoinverse(A) {
     var m = A.length, n = A[0].length;
     var A_trans = matrix_transpose(A);
     if (m >= n) {
-        return matrix_multiply(matrix_inverse(matrix_multiply(A_trans, A)), A_trans);
+        return matrix_multiply(numeric.inv(matrix_multiply(A_trans, A)), A_trans);
     } else {
-        return matrix_multiply(A_trans, matrix_inverse(matrix_multiply(A, A_trans)));
+        return matrix_multiply(A_trans, numeric.inv(matrix_multiply(A, A_trans)));
     }
 }
 
