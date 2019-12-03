@@ -87,11 +87,12 @@ function init() {
 
     // OPTIONAL servo controller additional features
     steady_state_error_reset = false; // integral term resets after desired met
-    servo_error_threshold = 0.001; // threshold for achieving desired
+    servo_error_threshold = 0.01; // threshold for achieving desired
     servo_active_persist = false; // toggle to turn on servo controller
     servo_active_state = {}; // string with current state of servo activation
     t_mode = false;
     t_log = t;
+    t_last = t;
 
     //STENCIL: for verlet integration, a first step in time is needed
     pendulum.angle_previous = pendulum.angle;
@@ -157,19 +158,28 @@ function animate() {
         var D_portion = pendulum.servo.kd * (pendulum.desired_dot - pendulum.angle_dot);
         pendulum.control = P_portion + I_portion + D_portion;
 
-        if (err < servo_error_threshold && t_mode) {
-            num_achieved_setpoints++;
-            t_mode = false;
+        if (err <= servo_error_threshold) {
+            if (t_mode && t - t_last >= 2) {
+                t_last = t;
+                num_achieved_setpoints++;
+                pendulum.desired = Math.random() * 2 * Math.PI;
+            }
+        } else {
+            t_last = t;
         }
     } else {
         accumulated_error = 0;
     }
 
     if (keyboard.pressed("t") && t - t_log > 1) {
-        t_mode = true;
+        t_mode = !t_mode;
         t_log = t;
-        pendulum.desired = Math.random() * 2 * Math.PI;
-        servo_active_persist = true;
+        if (t_mode) {
+            pendulum.desired = Math.random() * 2 * Math.PI;
+            servo_active_persist = true;
+        } else {
+            servo_active_persist = false;
+        }
     }
 
     // toggle activation of servo controller from user interaction

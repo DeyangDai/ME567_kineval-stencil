@@ -1,0 +1,16 @@
+Assignment 1
+    1. Potential fields and wavefront algorithm
+
+    2. PRM algorithm
+
+
+Assignment 2
+    1. Generating a random desired setpoint state and using PID control to Pendularm to this setpoint
+
+
+Assignment 3
+    1. Implementing LU decomposition (with pivoting) routines for matrix inversion and solving linear systems
+
+
+Assignment 5
+    1. Reaching to 100 targets in a random trial within 60 seconds

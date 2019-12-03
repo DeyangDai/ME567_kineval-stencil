@@ -339,9 +339,14 @@ function iterateGraphSearch() {
         currNode.visited = true;
         search_visited++;
 
-        if (searchNearby(currNode)) {
+        // find goal
+        if (isEqualNode([currNode.x, currNode.y], q_goal)) {
+            search_iterate = false;
+            drawHighlightedPathGraph(currNode);
             return "succeeded";
         }
+
+        searchNearby(currNode);
 
         return "iterating";
     }
@@ -394,16 +399,8 @@ function iterateGraphSearch() {
                     }
                     draw_2D_configuration([nearbyNode.x, nearbyNode.y]);
                 }
-
-                // find goal
-                if (isEqualNode([nearbyNode.x, nearbyNode.y], q_goal)) {
-                    search_iterate = false;
-                    drawHighlightedPathGraph(nearbyNode);
-                    return true;
-                }
             }
         }
-        return false;
     }
 }
 
