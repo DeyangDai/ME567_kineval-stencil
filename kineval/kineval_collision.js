@@ -55,11 +55,46 @@ kineval.poseIsCollision = function robot_collision_test(q) {
 
     // traverse robot kinematics to test each body for collision
     // STENCIL: implement forward kinematics for collision detection
-    //return robot_collision_forward_kinematics(q);
+    return robot_collision_forward_kinematics(q);
 
 }
 
+function robot_collision_forward_kinematics(q) {
+    var xyz = [q[0], q[1], q[2]];
+    var rpy = [q[3], q[4], q[5]];
+    var mstack = generate_transformation(xyz, rpy);
 
+    if (robot.links_geom_imported) {
+        var T_ros2threejs = matrix_multiply(
+            generate_rotation_matrix_Y(-Math.PI / 2),
+            generate_rotation_matrix_X(-Math.PI / 2));
+        mstack = matrix_multiply(mstack, T_ros2threejs);
+    }
+
+    return traverse_collision_forward_kinematics_link(robot.links[robot.base], mstack, q);
+}
+
+function traverse_collision_forward_kinematics_joint(joint, mstack, q) {
+    var T = generate_transformation(joint.origin.xyz, joint.origin.rpy);
+    var q_angle = q[q_names[joint.name]];
+
+    var jointMotion;
+    if ((!robot.links_geom_imported && joint.type === undefined)
+        || joint.type === "revolute"
+        || joint.type === "continuous") {
+        jointMotion = quaternion_to_rotation_matrix(
+            quaternion_normalize(quaternion_from_axisangle(joint.axis, q_angle))
+        );
+    } else if (joint.type === "prismatic") {
+        jointMotion = generate_translation_matrix(
+            q_angle*joint.axis[0], q_angle*joint.axis[1], q_angle*joint.axis[2]);
+    } else {
+        jointMotion = generate_identity(4);
+    }
+
+    mstack = matrix_multiply(matrix_multiply(mstack, T), jointMotion);
+    return traverse_collision_forward_kinematics_link(robot.links[joint.child], mstack, q)
+}
 
 function traverse_collision_forward_kinematics_link(link,mstack,q) {
 
