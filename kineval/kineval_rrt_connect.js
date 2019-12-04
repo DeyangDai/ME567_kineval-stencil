@@ -135,8 +135,9 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
     T_a = tree_init(q_start_config);
     T_b = tree_init(q_goal_config);
     RRT_connect_flag = true;
-    step = 0.5;
-    radius = 2 * step;
+    step = 0.4;
+    radius = 1.5 * step;
+    angle_scale = 0.1;
 }
 
 
@@ -191,6 +192,20 @@ function robot_rrt_planner_iterate() {
 
         } else if (rrt_alg === 2) {
             // rrt_star
+            var prob_goal = 0.2;
+            var isSearchingGoal = Math.random() < prob_goal;
+            if (isSearchingGoal) {
+                q_rand = q_goal_config;
+            }
+
+            if (rrt_star_extend(T_a, q_rand) === "reached" && isSearchingGoal) {
+                rrt_iterate = false;
+                var path = find_path(T_a);
+                kineval.motion_plan = [];
+                kineval.motion_plan_traversal_index = 0;
+                kineval.motion_plan = path.reverse();
+                return "reached";
+            }
         }
     }
     return 'extended';
@@ -210,6 +225,7 @@ function tree_init(q) {
     tree.vertices[0] = {};
     tree.vertices[0].vertex = q;
     tree.vertices[0].edges = [];
+    tree.vertices[0].path = 0;
 
     // create rendering geometry for base location of vertex configuration
     add_config_origin_indicator_geom(tree.vertices[0]);
@@ -262,6 +278,9 @@ function tree_add_edge(tree,q1_idx,q2_idx) {
     tree.vertices[q2_idx].edges.push(tree.vertices[q1_idx]);
 
     // can draw edge here, but not doing so to save rendering computation
+
+    tree.vertices[q1_idx].path = distance(tree.vertices[q1_idx].vertex, tree.vertices[q2_idx].vertex)
+        + tree.vertices[q2_idx].path;
 }
 
 //////////////////////////////////////////////////
@@ -278,6 +297,67 @@ function tree_add_edge(tree,q1_idx,q2_idx) {
     //   normalize_joint_state
     //   find_path
     //   path_dfs
+
+function rrt_star_extend(T, q) {
+    rrt_iter_count++;
+    var nearestIdx = nearest_neighbor(T, q);
+    var nearestVertexConf = T.vertices[nearestIdx].vertex;
+    var newVertexConf = new_config(nearestVertexConf, q);
+
+    if (!kineval.poseIsCollision(newVertexConf)) {
+        var neighbors = [];
+
+        for (var i = 0; i < T.vertices.length; i++) {
+            var dist = distance(newVertexConf, T.vertices[i].vertex);
+            if (dist <= radius) {
+                neighbors.push(T.vertices[i]);
+            }
+        }
+
+        var cost = null;
+        var minCost = Number.MAX_VALUE;
+        var minIdx = null;
+
+        for (i = 0; i < neighbors.length; i++) {
+            cost = distance(newVertexConf, neighbors[i].vertex) + neighbors[i].path;
+            if (cost < minCost) {
+                minCost = cost;
+                minIdx = i;
+            }
+        }
+
+        var parentIdx = T.vertices.indexOf(neighbors[minIdx]);
+        var idx = tree_add_vertex(T, newVertexConf);
+        tree_add_edge(T, T.vertices.length - 1, parentIdx);
+        rewrite(neighbors, T.vertices[idx]);
+
+        if (distance(newVertexConf, q) < step) {
+            tree_add_vertex(T, q);
+            tree_add_edge(T, T.vertices.length - 1, idx);
+            return "reached";
+        } else {
+            return "advanced";
+        }
+    }
+    return "trapped";
+}
+
+function rewrite(neighbors, newVertex) {
+    for (var i = 0; i < neighbors.length; i++) {
+        var parent = neighbors[i].edges[0];
+        if (typeof(parent) === 'undefined') {
+            continue;
+        }
+
+        var cost = newVertex.path + distance(newVertex.vertex, neighbors[i].vertex);
+        if (cost < neighbors[i].path) {
+            neighbors[i].edges[0] = newVertex;
+            newVertex.edges.push(neighbors[i]);
+            neighbors[i].path = cost;
+            parent.edges.splice(parent.edges.indexOf(neighbors[i]), 1);
+        }
+    }
+}
 
 function find_path(T) {
     var path = path_dfs(T);
@@ -311,6 +391,9 @@ function new_config(q_from, q_to) {
     var diff = [];
     for (var i = 0; i < q_from.length; i++) {
         diff[i] = q_to[i] - q_from[i];
+        if (i >= 3) {
+            diff[i] *= angle_scale;
+        }
     }
     var diff_normal = vector_normalize(diff);
 
@@ -329,7 +412,11 @@ function new_config(q_from, q_to) {
 function distance(q1, q2) {
     var dist = 0;
     for (var i = 0; i < q1.length; i++) {
-        dist += Math.pow(q1[i] - q2[i], 2);
+        if (i < 3) {
+            dist += Math.pow(q1[i] - q2[i], 2);
+        } else {
+            dist += Math.pow((q1[i] - q2[i]) * angle_scale, 2);
+        }
     }
     return Math.sqrt(dist);
 }
