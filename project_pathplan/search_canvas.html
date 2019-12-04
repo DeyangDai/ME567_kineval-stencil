@@ -433,9 +433,7 @@ function iterateRRT() {
     var isSearchingGoal = Math.random() < prob_goal;
     var q_random = isSearchingGoal ? q_goal : generateRandomConf();
 
-    var status = RRTExtend(T_a, q_random);
-    search_iter_count++;
-    if (status === "reached" && isSearchingGoal) {
+    if (RRTExtend(T_a, q_random) === "reached" && isSearchingGoal) {
         search_iterate = false;
         path_length = T_a.vertices[T_a.newest].path;
         var path = getPath(T_a);
@@ -459,6 +457,7 @@ function getPath(T) {
 }
 
 function RRTExtend(T, q) {
+    search_iter_count++;
     var nearestIdx = nearestIndex(T, q);
     var nearestVertex = T.vertices[nearestIdx].vertex;
     var newVertex = [];
@@ -534,9 +533,7 @@ function iterateRRTConnect() {
 
     var q_random = generateRandomConf();
     if (RRTExtend(T_a, q_random) !== 'trapped') {
-        var status = connect(T_b, T_a.vertices[T_a.newest].vertex);
-        search_iter_count++;
-        if (status === "reached") {
+        if (connect(T_b, T_a.vertices[T_a.newest].vertex) === "reached") {
             search_iterate = false;
             var path_a = getPath(T_a);
             var path_b = getPath(T_b);
@@ -578,9 +575,7 @@ function iterateRRTStar() {
     var isSearchingGoal = Math.random() < prob_goal;
     var q_random = isSearchingGoal ? q_goal : generateRandomConf();
 
-    var status = RRTStarExtend(T_a, q_random);
-    search_iter_count++;
-    if (status === "reached" && isSearchingGoal) {
+    if (RRTStarExtend(T_a, q_random) === "reached" && isSearchingGoal) {
         search_iterate = false;
         var path = getPath(T_a);
         path_length = T_a.vertices[T_a.newest].path;
@@ -592,6 +587,7 @@ function iterateRRTStar() {
 }
 
 function RRTStarExtend(T, q) {
+    search_iter_count++;
     var nearestIdx = nearestIndex(T, q);
     var nearestVertex = T.vertices[nearestIdx].vertex;
     var newVertex = [];

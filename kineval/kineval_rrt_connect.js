@@ -109,9 +109,15 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
     q_index = [];  // store mapping between joint names and q DOFs
 
     for (x in robot.joints) {
+        var joint = robot.joints[x];
         q_names[x] = q_start_config.length;
         q_index[q_start_config.length] = x;
-        q_start_config = q_start_config.concat(robot.joints[x].angle);
+        if (joint.type === 'revolute' || joint.type === 'prismatic') {
+            var angle = Math.min(joint.limit.upper, Math.max(joint.limit.lower, joint.angle));
+            q_start_config = q_start_config.concat(angle);
+        } else {
+            q_start_config = q_start_config.concat(joint.angle);
+        }
     }
 
     // set goal configuration as the zero configuration
@@ -125,6 +131,12 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
 
     // make sure the rrt iterations are not running faster than animation update
     cur_time = Date.now();
+
+    T_a = tree_init(q_start_config);
+    T_b = tree_init(q_goal_config);
+    RRT_connect_flag = true;
+    step = 0.5;
+    radius = 2 * step;
 }
 
 
@@ -132,7 +144,7 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
 function robot_rrt_planner_iterate() {
 
     var i;
-    rrt_alg = 1;  // 0: basic rrt (OPTIONAL), 1: rrt_connect (REQUIRED)
+    rrt_alg = 1;  // 0: basic rrt (OPTIONAL), 1: rrt_connect (REQUIRED), 2: rrt_star
 
     if (rrt_iterate && (Date.now()-cur_time > 10)) {
         cur_time = Date.now();
@@ -150,8 +162,38 @@ function robot_rrt_planner_iterate() {
     //   tree_init - creates a tree of configurations
     //   tree_add_vertex - adds and displays new configuration vertex for a tree
     //   tree_add_edge - adds and displays new tree edge between configurations
-    }
 
+        var q_rand = random_config();
+
+        if (rrt_alg === 1) {
+            // rrt_connect
+            if (rrt_extend(T_a, q_rand) !== 'trapped') {
+                if (rrt_connect(T_b, T_a.vertices[T_a.newest].vertex) === "reached") {
+                    rrt_iterate = false;
+                    var path_a = find_path(T_a);
+                    var path_b = find_path(T_b);
+                    kineval.motion_plan = [];
+                    kineval.motion_plan_traversal_index = 0;
+
+                    if (RRT_connect_flag) {
+                        kineval.motion_plan = path_a.reverse().concat(path_b);
+                    } else {
+                        kineval.motion_plan = path_b.reverse().concat(path_a);
+                    }
+                    return "reached";
+                }
+            }
+
+            var tmp = T_a;
+            T_a = T_b;
+            T_b = tmp;
+            RRT_connect_flag = !RRT_connect_flag;
+
+        } else if (rrt_alg === 2) {
+            // rrt_star
+        }
+    }
+    return 'extended';
 }
 
 //////////////////////////////////////////////////
@@ -179,8 +221,6 @@ function tree_init(q) {
 }
 
 function tree_add_vertex(tree,q) {
-
-
     // create new vertex object for tree with given configuration and no edges
     var new_vertex = {};
     new_vertex.edges = [];
@@ -192,6 +232,8 @@ function tree_add_vertex(tree,q) {
     // maintain index of newest vertex added to tree
     tree.vertices.push(new_vertex);
     tree.newest = tree.vertices.length - 1;
+
+    return tree.newest;
 }
 
 function add_config_origin_indicator_geom(vertex) {
@@ -237,7 +279,121 @@ function tree_add_edge(tree,q1_idx,q2_idx) {
     //   find_path
     //   path_dfs
 
+function find_path(T) {
+    var path = path_dfs(T);
+    for (var i = 0; i < path.length; i++) {
+        path[i].geom.material.color = {r:1, g:0, b:0};
+    }
+    return path;
+}
 
+function path_dfs(T) {
+    var path = [];
+    var curr = T.vertices[T.newest];
+
+    while (curr !== T.vertices[0]) {
+        path.push(curr);
+        curr = curr.edges[0];
+    }
+    path.push(curr);
+    return path;
+}
+
+function rrt_connect(T, q) {
+    var status = 'advanced';
+    while (status === 'advanced') {
+        status = rrt_extend(T, q);
+    }
+    return status;
+}
+
+function new_config(q_from, q_to) {
+    var diff = [];
+    for (var i = 0; i < q_from.length; i++) {
+        diff[i] = q_to[i] - q_from[i];
+    }
+    var diff_normal = vector_normalize(diff);
+
+    var newConf = [];
+    for (i = 0; i < q_from.length; i++) {
+        newConf[i] = q_from[i] + diff_normal[i] * step;
+
+        var joint = robot.joints[q_index[i]];
+        if (joint && (joint.type === 'revolute' || joint.type === 'prismatic')) {
+            newConf[i] = Math.min(joint.limit.upper, Math.max(joint.limit.lower, newConf[i]));
+        }
+    }
+    return newConf;
+}
+
+function distance(q1, q2) {
+    var dist = 0;
+    for (var i = 0; i < q1.length; i++) {
+        dist += Math.pow(q1[i] - q2[i], 2);
+    }
+    return Math.sqrt(dist);
+}
+
+function nearest_neighbor(T, q) {
+    var dist = null;
+    var minDist = Number.MAX_VALUE;
+    var minIdx = null;
+
+    for (var i = 0; i < T.vertices.length; i++) {
+        dist = distance(T.vertices[i].vertex, q);
+        if (dist < minDist) {
+            minDist = dist;
+            minIdx = i;
+        }
+    }
+    return minIdx;
+}
+
+function rrt_extend(T, q) {
+    rrt_iter_count++;
+    var nearestIdx = nearest_neighbor(T, q);
+    var nearestVertexConf = T.vertices[nearestIdx].vertex;
+    var newVertexConf = new_config(nearestVertexConf, q);
+
+    if (!kineval.poseIsCollision(newVertexConf)) {
+        var idx = tree_add_vertex(T, newVertexConf);
+        tree_add_edge(T, T.vertices.length - 1, nearestIdx);
+
+        if (distance(newVertexConf, q) < step) {
+            tree_add_vertex(T, q);
+            tree_add_edge(T, T.vertices.length - 1, idx);
+            return "reached";
+        } else {
+            return "advanced";
+        }
+    }
+    return "trapped";
+}
+
+function random_config() {
+    var xMin = robot_boundary[0][0];
+    var xMax = robot_boundary[1][0];
+    var zMin = robot_boundary[0][2];
+    var zMax = robot_boundary[1][2];
+
+    var q_rand = [];
+    q_rand[0] = 1.4 * xMin - 0.4 * xMax + 1.8 * (xMax - xMin) * Math.random();
+    q_rand[1] = 0;
+    q_rand[2] = 1.4 * zMin - 0.4 * zMax + 1.8 * (zMax - zMin) * Math.random();
+    q_rand[3] = 0;
+    q_rand[4] = 2 * Math.PI * Math.random();
+    q_rand[5] = 0;
+
+    for (var i = 6; i < T_a.vertices[0].vertex.length; i++) {
+        var joint = robot.joints[q_index[i]];
+        if (joint.type === 'revolute' || joint.type === 'prismatic') {
+            q_rand[i] = joint.limit.lower + (joint.limit.upper - joint.limit.lower) * Math.random();
+        } else {
+            q_rand[i] = 2 * Math.PI * Math.random();
+        }
+    }
+    return q_rand;
+}
 
 
 
