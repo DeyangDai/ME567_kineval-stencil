@@ -102,6 +102,29 @@ kineval.handleUserInput = function user_input() {
         kineval.params.update_pd_clock = true;
     }
 
+    // set q_goal_config
+    if ( keyboard.pressed("y")) {
+        is_q_goal_set = true;
+        q_goal_config = [
+            robot.origin.xyz[0],
+            robot.origin.xyz[1],
+            robot.origin.xyz[2],
+            robot.origin.rpy[0],
+            robot.origin.rpy[1],
+            robot.origin.rpy[2]
+        ];
+        for (var x in robot.joints) {
+            var joint = robot.joints[x];
+            if (joint.type === 'revolute' || joint.type === 'prismatic') {
+                var angle = Math.min(joint.limit.upper, Math.max(joint.limit.lower, joint.angle));
+                q_goal_config = q_goal_config.concat(angle);
+            } else {
+                q_goal_config = q_goal_config.concat(joint.angle);
+            }
+        }
+        textbar.innerHTML = "q_goal_config has been set";
+    }
+
     // textbar messages
     if (kineval.params.update_pd||kineval.params.persist_pd) {
         textbar.innerHTML = "joint servo controller has been invoked";
@@ -253,8 +276,9 @@ kineval.displayHelp = function display_help () {
             + "<br>r/f : move inverse kinematics target up/down"
             + "<br>m : invoke motion planner "
             + "<br>n/b : show next/previous pose in motion plan "
-            + "<br>h : toggle gui command widget ";
-            + "<br>v : print commands to screen ";
+            + "<br>h : toggle gui command widget "
+            + "<br>v : print commands to screen "
+            + "<br>y : set current configuration as q_goal_config ";
 }
 
 

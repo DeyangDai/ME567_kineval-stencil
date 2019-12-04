@@ -14,3 +14,9 @@ Assignment 3
 
 Assignment 5
     1. Reaching to 100 targets in a random trial within 60 seconds
+
+
+Assignment 6
+    1. Adding the capability of motion planning to an arbitrary robot configuration goal.
+       (press y to set current robot configuration as q_goal_config)
+

@@ -121,9 +121,11 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
     }
 
     // set goal configuration as the zero configuration
-    var i; 
-    q_goal_config = new Array(q_start_config.length);
-    for (i=0;i<q_goal_config.length;i++) q_goal_config[i] = 0;
+    var i;
+    if (typeof(is_q_goal_set) === 'undefined' || !is_q_goal_set) {
+        q_goal_config = new Array(q_start_config.length);
+        for (i=0;i<q_goal_config.length;i++) q_goal_config[i] = 0;
+    }
 
     // flag to continue rrt iterations
     rrt_iterate = true;
