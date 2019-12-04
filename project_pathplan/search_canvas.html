@@ -92,6 +92,8 @@ function initSearch() {
     // specify default eps (epsilon) spatial resolution variable
     //   for RRT, specifies threshold radius for step size and reaching goal
     eps = 0.1;
+    threshold_radius = 2 * eps;
+    RRT_connect_flag = true;
 
     // create event handlers for the mouse
     canvas = document.getElementById("myCanvas");
@@ -282,7 +284,7 @@ function animate() {
                 break;
             case "RRT-connect":
                 // (hack to speed viz) while (search_result == "failed")
-                    search_result = iterateRRTConnect();
+                search_result = iterateRRTConnect();
                 break;
             case "RRT-star":
                 search_result = iterateRRTStar();
@@ -406,8 +408,6 @@ function iterateGraphSearch() {
 
 
 function iterateRRT() {
-
-
     // STENCIL: implement a single iteration of an RRT algorithm.
     //   An asynch timing mechanism is used instead of a for loop to avoid
     //   blocking and non-responsiveness in the browser.
@@ -423,11 +423,94 @@ function iterateRRT() {
     //   insertTreeVertex - adds and displays new configuration vertex for a tree
     //   insertTreeEdge - adds and displays new tree edge between configurations
     //   drawHighlightedPath - renders a highlighted path in a tree
+
+    if (search_iter_count > search_max_iterations) {
+        search_iterate = false;
+        return "failed";
+    }
+
+    var prob_goal = 0.2;
+    var isSearchingGoal = Math.random() < prob_goal;
+    var q_random = isSearchingGoal ? q_goal : generateRandomConf();
+
+    var status = RRTExtend(T_a, q_random);
+    search_iter_count++;
+    if (status === "reached" && isSearchingGoal) {
+        search_iterate = false;
+        path_length = T_a.vertices[T_a.newest].path;
+        var path = getPath(T_a);
+        drawHighlightedPath(path);
+        return "succeeded";
+    }
+
+    return "extended";
+}
+
+function getPath(T) {
+    var path = [];
+    var currVertex = T.vertices[T.newest];
+
+    while (!isEqualNode(currVertex.vertex, T.vertices[0].vertex)) {
+        path.unshift(currVertex);
+        currVertex = currVertex.edges[0];
+    }
+    path.unshift(currVertex);
+    return path;
+}
+
+function RRTExtend(T, q) {
+    var nearestIdx = nearestIndex(T, q);
+    var nearestVertex = T.vertices[nearestIdx].vertex;
+    var newVertex = [];
+    for (var i = 0; i < 2; i++) {
+        newVertex[i] = (q[i] - nearestVertex[i]) * eps / distance(q, nearestVertex) + nearestVertex[i];
+    }
+
+    if (!testCollision(newVertex)) {
+        var idx = insertTreeVertex(T, newVertex);
+        insertTreeEdge(T, T.vertices.length - 1, nearestIdx);
+
+        if (distance(newVertex, q) < eps) {
+            insertTreeVertex(T, q);
+            insertTreeEdge(T, T.vertices.length - 1, idx);
+            return "reached";
+        } else {
+            return "iterating";
+        }
+    }
+    return "collided";
+}
+
+function nearestIndex(T, q) {
+    var dist = null;
+    var minDist = Number.MAX_VALUE;
+    var minIdx = null;
+
+    for (var i = 0; i < T.vertices.length; i++) {
+        dist = distance(T.vertices[i].vertex, q);
+        if (dist < minDist) {
+            minDist = dist;
+            minIdx = i;
+        }
+    }
+
+    return minIdx;
+}
+
+function distance(q1, q2) {
+    return Math.sqrt(Math.pow(q1[0] - q2[0], 2) + Math.pow(q1[1] - q2[1], 2));
+}
+
+function generateRandomConf() {
+    var minX = range[0][1][1];
+    var maxX = range[1][1][0];
+
+    var randX = minX + (maxX - minX) * Math.random();
+    var randY = minX + (maxX - minX) * Math.random();
+    return [randX, randY];
 }
 
 function iterateRRTConnect() {
-
-
     // STENCIL: implement a single iteration of an RRT-Connect algorithm.
     //   An asynch timing mechanism is used instead of a for loop to avoid
     //   blocking and non-responsiveness in the browser.
@@ -443,10 +526,88 @@ function iterateRRTConnect() {
     //   insertTreeVertex - adds and displays new configuration vertex for a tree
     //   insertTreeEdge - adds and displays new tree edge between configurations
     //   drawHighlightedPath - renders a highlighted path in a tree
+
+    if (search_iter_count > search_max_iterations) {
+        search_iterate = false;
+        return "failed";
+    }
+
+    var q_random = generateRandomConf();
+    RRTExtend(T_a, q_random);
+    var status = RRTExtend(T_b, T_a.vertices[T_a.newest].vertex);
+    search_iter_count++;
+    if (status === "reached") {
+        search_iterate = false;
+        var path_a = getPath(T_a);
+        var path_b = getPath(T_b);
+        path_length = T_a.vertices[T_a.newest].path + T_b.vertices[T_b.newest].path;
+        var path = [];
+        if (RRT_connect_flag) {
+            path = path_a.concat(path_b.reverse());
+        } else {
+            path = path_b.concat(path_a.reverse());
+        }
+        drawHighlightedPath(path);
+        return "succeeded";
+    }
+    var tmp = T_a;
+    T_a = T_b;
+    T_b = tmp;
+    RRT_connect_flag = !RRT_connect_flag;
+
+    return "extended";
 }
 
 function iterateRRTStar() {
+    if (search_iter_count > search_max_iterations) {
+        search_iterate = false;
+        return "failed";
+    }
 
+    var prob_goal = 0.2;
+    var isSearchingGoal = Math.random() < prob_goal;
+    var q_random = isSearchingGoal ? q_goal : generateRandomConf();
+
+    var status = RRTStarExtend(T_a, q_random);
+    search_iter_count++;
+    if (status === "reached" && isSearchingGoal) {
+        search_iterate = false;
+        var path = getPath(T_a);
+        drawHighlightedPath(path);
+        return "succeeded";
+    }
+
+    return "extended";
+}
+
+function RRTStarExtend(T, q) {
+    var nearestIdx = nearestIndex(T, q);
+    var nearestVertex = T.vertices[nearestIdx].vertex;
+    var newVertex = [];
+    for (var i = 0; i < 2; i++) {
+        newVertex[i] = (q[i] - nearestVertex[i]) * eps / distance(q, nearestVertex) + nearestVertex[i];
+    }
+
+    if (!testCollision(newVertex)) {
+        var neighbors = [];
+
+
+
+
+
+
+        var idx = insertTreeVertex(T, newVertex);
+        insertTreeEdge(T, T.vertices.length - 1, nearestIdx);
+
+        if (distance(newVertex, q) < eps) {
+            insertTreeVertex(T, q);
+            insertTreeEdge(T, T.vertices.length - 1, idx);
+            return "reached";
+        } else {
+            return "iterating";
+        }
+    }
+    return "collided";
 }
 
 //////////////////////////////////////////////////
@@ -978,6 +1139,7 @@ function initRRT(q) {
     tree.vertices[0] = {};
     tree.vertices[0].vertex = q;
     tree.vertices[0].edges = [];
+    tree.vertices[0].path = 0;
 
     // maintain index of newest vertex added to tree
     tree.newest = 0;
@@ -998,6 +1160,7 @@ function insertTreeVertex(tree,q) {
 
     // draw location on canvas
     draw_2D_configuration(q);
+    return tree.newest;
 }
 
 function draw_2D_configuration(q) {
@@ -1025,6 +1188,9 @@ function insertTreeEdge(tree,q1_idx,q2_idx) {
 
     // add edge to second vertex as pointer to first vertex
     tree.vertices[q2_idx].edges.push(tree.vertices[q1_idx]);
+
+    tree.vertices[q1_idx].path = distance(tree.vertices[q1_idx].vertex, tree.vertices[q2_idx].vertex)
+        + tree.vertices[q2_idx].path;
 
     // draw edge on canvas
     draw_2D_edge_configurations(tree.vertices[q1_idx].vertex,tree.vertices[q2_idx].vertex);
