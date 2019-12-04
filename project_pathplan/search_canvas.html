@@ -475,10 +475,10 @@ function RRTExtend(T, q) {
             insertTreeEdge(T, T.vertices.length - 1, idx);
             return "reached";
         } else {
-            return "iterating";
+            return "advanced";
         }
     }
-    return "collided";
+    return "trapped";
 }
 
 function nearestIndex(T, q) {
@@ -533,29 +533,39 @@ function iterateRRTConnect() {
     }
 
     var q_random = generateRandomConf();
-    RRTExtend(T_a, q_random);
-    var status = RRTExtend(T_b, T_a.vertices[T_a.newest].vertex);
-    search_iter_count++;
-    if (status === "reached") {
-        search_iterate = false;
-        var path_a = getPath(T_a);
-        var path_b = getPath(T_b);
-        path_length = T_a.vertices[T_a.newest].path + T_b.vertices[T_b.newest].path;
-        var path = [];
-        if (RRT_connect_flag) {
-            path = path_a.concat(path_b.reverse());
-        } else {
-            path = path_b.concat(path_a.reverse());
+    if (RRTExtend(T_a, q_random) !== 'trapped') {
+        var status = connect(T_b, T_a.vertices[T_a.newest].vertex);
+        search_iter_count++;
+        if (status === "reached") {
+            search_iterate = false;
+            var path_a = getPath(T_a);
+            var path_b = getPath(T_b);
+            path_length = T_a.vertices[T_a.newest].path + T_b.vertices[T_b.newest].path;
+            var path = [];
+            if (RRT_connect_flag) {
+                path = path_a.concat(path_b.reverse());
+            } else {
+                path = path_b.concat(path_a.reverse());
+            }
+            drawHighlightedPath(path);
+            return "succeeded";
         }
-        drawHighlightedPath(path);
-        return "succeeded";
     }
+
     var tmp = T_a;
     T_a = T_b;
     T_b = tmp;
     RRT_connect_flag = !RRT_connect_flag;
 
     return "extended";
+}
+
+function connect(T, q) {
+    var status = 'advanced';
+    while (status === 'advanced') {
+        status = RRTExtend(T, q);
+    }
+    return status;
 }
 
 function iterateRRTStar() {
@@ -573,6 +583,7 @@ function iterateRRTStar() {
     if (status === "reached" && isSearchingGoal) {
         search_iterate = false;
         var path = getPath(T_a);
+        path_length = T_a.vertices[T_a.newest].path;
         drawHighlightedPath(path);
         return "succeeded";
     }
@@ -591,23 +602,56 @@ function RRTStarExtend(T, q) {
     if (!testCollision(newVertex)) {
         var neighbors = [];
 
+        for (i = 0; i < T.vertices.length; i++) {
+            var dist = distance(newVertex, T.vertices[i].vertex);
+            if (dist <= threshold_radius) {
+                neighbors.push(T.vertices[i]);
+            }
+        }
 
+        var cost = null;
+        var minCost = Number.MAX_VALUE;
+        var minIdx = null;
 
+        for (i = 0; i < neighbors.length; i++) {
+            cost = distance(newVertex, neighbors[i].vertex) + neighbors[i].path;
+            if (cost < minCost) {
+                minCost = cost;
+                minIdx = i;
+            }
+        }
 
-
-
+        var parentIdx = T.vertices.indexOf(neighbors[minIdx]);
         var idx = insertTreeVertex(T, newVertex);
-        insertTreeEdge(T, T.vertices.length - 1, nearestIdx);
+        insertTreeEdge(T, T.vertices.length - 1, parentIdx);
+        rewrite(neighbors, T.vertices[idx]);
 
         if (distance(newVertex, q) < eps) {
             insertTreeVertex(T, q);
             insertTreeEdge(T, T.vertices.length - 1, idx);
             return "reached";
         } else {
-            return "iterating";
+            return "advanced";
         }
     }
-    return "collided";
+    return "trapped";
+}
+
+function rewrite(neighbors, newVertex) {
+    for (var i = 0; i < neighbors.length; i++) {
+        var parent = neighbors[i].edges[0];
+        if (typeof(parent) === 'undefined') {
+            continue;
+        }
+
+        var cost = newVertex.path + distance(newVertex.vertex, neighbors[i].vertex);
+        if (cost < neighbors[i].path) {
+            neighbors[i].edges[0] = newVertex;
+            newVertex.edges.push(neighbors[i]);
+            neighbors[i].path = cost;
+            parent.edges.splice(parent.edges.indexOf(neighbors[i]), 1);
+        }
+    }
 }
 
 //////////////////////////////////////////////////
