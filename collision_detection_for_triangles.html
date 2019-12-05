@@ -1,0 +1,303 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Collision detection system for 2D and 3D triangles</title>
+    <style type="text/css">
+        table{ border-collapse:collapse; border:solid 1px Black; }
+        table td{ /*width:50px; height:20px;*/  border:solid 1px Black; padding:5px; text-align: center}
+    </style>
+</head>
+
+<body>
+
+Collision detection system for 2D and 3D triangles
+<br>
+<br>
+<div>
+    <input type="radio" name="triangles" value="2D" onclick="init('2D')" checked="checked" id="2D"> 2D triangles
+    <input type="radio" name="triangles" value="3D" onclick="init('3D')" disabled id="3D"> 3D triangles
+</div>
+<div id="param">
+    <table style="border: 1px solid">
+        <tr>
+            <td style="font-size: large; font-weight: bold; text-align: center" class="t" colspan="2" id="td1">Triangle 1</td>
+            <td style="font-size: large; font-weight: bold; text-align: center" class="t" colspan="2" id="td2">Triangle 2</td>
+        </tr>
+        <tr>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                x1: <input type="text" id="x11" class="clear tri1">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                y1: <input type="text" id="y11" class="clear tri1">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t3" hidden>
+                z1: <input type="text" id="z11" class="clear tri1">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                x1: <input type="text" id="x21" class="clear tri2">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                y1: <input type="text" id="y21" class="clear tri2">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t3" hidden>
+                z1: <input type="text" id="z21" class="clear tri2">
+            </td>
+
+        </tr>
+        <tr>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                x2: <input type="text" id="x12" class="clear tri1">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                y2: <input type="text" id="y12" class="clear tri1">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t3" hidden>
+                z2: <input type="text" id="z12" class="clear tri1">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                x2: <input type="text" id="x22" class="clear tri2">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                y2: <input type="text" id="y22" class="clear tri2">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t3" hidden>
+                z2: <input type="text" id="z22" class="clear tri2">
+            </td>
+        </tr>
+        <tr>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                x3: <input type="text" id="x13" class="clear tri1">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                y3: <input type="text" id="y13" class="clear tri1">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t3" hidden>
+                z3: <input type="text" id="z13" class="clear tri1">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                x3: <input type="text" id="x23" class="clear tri2">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t2" >
+                y3: <input type="text" id="y23" class="clear tri2">
+            </td>
+            <td style="font-size: large; font-weight: bold; " class="t3" hidden>
+                z3: <input type="text" id="z23" class="clear tri2">
+            </td>
+        </tr>
+    </table>
+    <br>
+    <input type='button' value='Generate & Detect collision' onclick='generateAndDetect()' class="t" >
+    <input type='button' value='Clear' onclick='clearText()' class="t" >
+    <br>
+    <div class="t" >Result: <input type="text" value="" id="output" class="clear"></div>
+</div>
+<canvas id="myCanvas" width=800 height=800 style="z-index: 10 ;border:1px solid #000000;">
+</canvas>
+
+<script src="js/numeric-1.2.6.js"></script>
+<script src="kineval/kineval_matrix.js"></script>
+<script>
+function init(mode) {
+    var elems = document.getElementsByClassName('t');
+    for (var i = 0; i < elems.length; i++) {
+        elems[i].removeAttribute('hidden');
+    }
+    if (mode === '2D') {
+        document.getElementById('td1').setAttribute('colspan', "2");
+        document.getElementById('td2').setAttribute('colspan', "2");
+        elems = document.getElementsByClassName('t2');
+        for (i = 0; i < elems.length; i++) {
+            elems[i].removeAttribute('hidden');
+        }
+        elems = document.getElementsByClassName('t3');
+        for (i = 0; i < elems.length; i++) {
+            elems[i].setAttribute('hidden', 'hidden');
+        }
+    } else {
+        document.getElementById('td1').setAttribute('colspan', "3");
+        document.getElementById('td2').setAttribute('colspan', "3");
+        elems = document.getElementsByClassName('t3');
+        for (i = 0; i < elems.length; i++) {
+            elems[i].removeAttribute('hidden');
+        }
+    }
+}
+
+function generateAndDetect() {
+    is2D = !!document.getElementById('2D').getAttribute('checked');
+    var t1 = [[], [], []];
+    var t2 = [[], [], []];
+
+    var tri1 = document.getElementsByClassName('tri1');
+    var tri2 = document.getElementsByClassName('tri2');
+    for (var i = 0; i < tri1.length; i++) {
+        t1[Math.floor(i / 3)][i % 3] = numeric.parseFloat(tri1[i].value);
+        t2[Math.floor(i / 3)][i % 3] = numeric.parseFloat(tri2[i].value);
+    }
+
+    if (is2D) {
+        for (i = 0; i < 3; i++) {
+            t1[i].pop();
+            t2[i].pop();
+        }
+        draw2D(t1, t2);
+        document.getElementById('output').setAttribute('value', detectCollision2D(t1, t2) ? 'Collision' : 'No collision');
+    } else {
+        draw3D(t1, t2);
+        document.getElementById('output').setAttribute('value', detectCollision3D(t1, t2) ? 'Collision' : 'No collision');
+    }
+}
+
+function draw2D(t1, t2) {
+    var canvasElement = document.querySelector("#myCanvas");
+    var context = canvasElement.getContext("2d");
+    context.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+    // the triangle 1
+    context.beginPath();
+    context.moveTo(t1[0][0], t1[0][1]);
+    context.lineTo(t1[1][0], t1[1][1]);
+    context.lineTo(t1[2][0], t1[2][1]);
+    context.closePath();
+
+    // the outline
+    context.lineWidth = 2;
+    context.strokeStyle = '#000000';
+    context.stroke();
+
+    // the fill color
+    context.fillStyle = "rgba(255, 0, 0, 0.3)";
+    context.fill();
+
+    // the triangle 2
+    context.beginPath();
+    context.moveTo(t2[0][0], t2[0][1]);
+    context.lineTo(t2[1][0], t2[1][1]);
+    context.lineTo(t2[2][0], t2[2][1]);
+    context.closePath();
+
+    // the outline
+    context.lineWidth = 2;
+    context.strokeStyle = '#000000';
+    context.stroke();
+
+    // the fill color
+    context.fillStyle = "rgba(0, 0, 255, 0.3)";
+    context.fill();
+}
+
+function detectCollision2D(t1, t2) {
+    if (detectLineTriangleCollision2D(t2, t1[0], t1[1])) {
+        return true;
+    } else if (detectLineTriangleCollision2D(t2, t1[1], t1[2])) {
+        return true;
+    } else if (detectLineTriangleCollision2D(t2, t1[0], t1[2])) {
+        return true;
+    } else {
+        var center1 = getCenter(t1);
+        var center2 = getCenter(t2);
+        return isPointInTriangle(t1, center2) || isPointInTriangle(t2, center1);
+    }
+}
+
+function isPointInTriangle(t, c) {
+    var vec1 = vector_substract(t[2], t[0]);
+    var vec2 = vector_substract(t[1], t[0]);
+    var vec3 = vector_substract(c, t[0]);
+
+    var d1 = vector_dot(vec1, vec1);
+    var d2 = vector_dot(vec1, vec2);
+    var d3 = vector_dot(vec1, vec3);
+    var d4 = vector_dot(vec2, vec2);
+    var d5 = vector_dot(vec2, vec3);
+
+    var a = (d4*d3 - d2*d5) / (d1*d4 - d2*d2);
+    if (a < 0 || a > 1) {
+        return false;
+    }
+    var b = (d1*d5 - d2*d3) / (d1*d4 - d2*d2);
+    if (b < 0 || b > 1) {
+        return false;
+    }
+    return a + b <= 1;
+}
+
+function getVector(v1, v2) {
+    if (is2D) {
+        return [v2[0] - v1[0], v2[1] - v1[1]];
+    } else {
+        return [v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2]];
+    }
+}
+
+function getCenter(t) {
+    var c = [];
+    for (var i = 0; i < (is2D ? 2 : 3); i++) {
+        c.push((t[0][i] + t[1][i] + t[2][i]) / 3);
+    }
+    return c;
+}
+
+function detectLineTriangleCollision2D(t, v1, v2) {
+    var v3 = t[0];
+    var v4 = t[1];
+    if (lineIntersect(v1, v2, v3, v4)) {
+        return true;
+    }
+
+    v3 = t[1];
+    v4 = t[2];
+    if (lineIntersect(v1, v2, v3, v4)) {
+        return true;
+    }
+
+    v3 = t[0];
+    v4 = t[2];
+    return lineIntersect(v1, v2, v3, v4);
+}
+
+function direction(v1, v2, v) {
+    return (v[0] - v1[0]) * (v2[1] - v1[1]) - (v2[0] - v1[0]) * (v[1] - v1[1]);
+}
+
+function lineIntersect(v1, v2, v3, v4) {
+    var d1 = direction(v3, v4, v1);
+    var d2 = direction(v3, v4, v2);
+    var d3 = direction(v1, v2, v3);
+    var d4 = direction(v1, v2, v4);
+
+    if (d1 * d2 < 0 && d3 * d4 < 0) {
+        return true;
+    } else if (d1 === 0 && pointInLine(v3, v4, v1)) {
+        return true;
+    } else if (d2 === 0 && pointInLine(v3, v4, v2)) {
+        return true;
+    } else if (d3 === 0 && pointInLine(v1, v2, v3)) {
+        return true;
+    } else if (d4 === 0 && pointInLine(v1, v2, v4)) {
+        return true;
+    }
+    return false;
+}
+
+function pointInLine(v1, v2, v) {
+    var min1 = Math.min(v1[0], v2[0]);
+    var max1 = Math.max(v1[0], v2[0]);
+    var min2 = Math.min(v1[1], v2[1]);
+    var max2 = Math.max(v1[1], v2[1]);
+
+    return v[0] >= min1 && v[0] <= max1 && v[1] >= min2 && v[1] <= max2;
+}
+
+function clearText() {
+    var elems = document.getElementsByClassName('clear');
+    for (var i = 0; i < elems.length; i++) {
+        elems[i].value = '';
+    }
+}
+
+</script>
+
+
+</body>
+</html>

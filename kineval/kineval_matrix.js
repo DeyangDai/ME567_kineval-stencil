@@ -104,6 +104,14 @@ function matrix_invert_affine(T) {
     return Res;
 }
 
+function vector_dot(a, b) {
+    var sum = 0;
+    for (var i = 0; i < a.length; i++) {
+        sum += a[i] * b[i];
+    }
+    return sum;
+}
+
 function vector_normalize(a) {
     // a: n x 1 vector
     // return a / ||a||: n x 1 vector
