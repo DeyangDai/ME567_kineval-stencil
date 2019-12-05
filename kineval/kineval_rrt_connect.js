@@ -140,6 +140,7 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
     step = 0.4;
     radius = 1.5 * step;
     angle_scale = 0.1;
+    threshold_goal = 0.7;
 }
 
 
@@ -333,7 +334,7 @@ function rrt_star_extend(T, q) {
         tree_add_edge(T, T.vertices.length - 1, parentIdx);
         rewrite(neighbors, T.vertices[idx]);
 
-        if (distance(newVertexConf, q) < step) {
+        if (distance(newVertexConf, q) < threshold_goal) {
             tree_add_vertex(T, q);
             tree_add_edge(T, T.vertices.length - 1, idx);
             return "reached";
