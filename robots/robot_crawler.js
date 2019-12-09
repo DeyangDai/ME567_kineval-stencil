@@ -11,7 +11,7 @@ robot = new Object(); // or just {} will create new object
 robot.name = "crawler";
 
 // initialize start pose of robot in the world
-robot.origin = {xyz: [0,1,0], rpy:[0,0,0]};  // held a bit over the ground plane
+robot.origin = {xyz: [0,0,0], rpy:[0,0,0]};  // held a bit over the ground plane
 
 // specify base link of the robot; robot.origin is transform of world to the robot base
 robot.base = "base";  

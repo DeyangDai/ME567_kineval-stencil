@@ -8,7 +8,7 @@ robot = {
   name:"baxter", 
   base:"pedestal", 
   // origin:{ xyz: [0,0.1,0], rpy:[0,0,0] },
-  origin:{ xyz: [0,0.86488,0], rpy:[0,0,0] },
+  origin:{ xyz: [0,0,0], rpy:[0,0,0] },
   links: {
     "torso": { 
       visual : { 

@@ -9,7 +9,7 @@ robot = {
   base:"pedestal", 
   //base:"right_arm_base_link", 
   // origin:{ xyz: [0,0.1,0], rpy:[0,0,0] },
-  origin:{ xyz: [0,0.86488,0], rpy:[0,0,0] },
+  origin:{ xyz: [0,0,0], rpy:[0,0,0] },
   links: {
 /*
     "base": {}, // empty link
