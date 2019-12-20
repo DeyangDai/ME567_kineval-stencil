@@ -86,7 +86,7 @@ Collision detection system for 2D and 3D triangles
         </tr>
     </table>
     <br>
-    <input type='button' value='Generate & Detect collision' onclick='generateAndDetect()' class="t" >
+    <input type='button' value='Generate Random Triangles & Detect collision' onclick='generateAndDetect()' class="t" >
     <input type='button' value='Clear' onclick='clearText()' class="t" >
     <br>
     <div class="t" >Result: <input type="text" value="" id="output" class="clear"></div>
@@ -131,6 +131,8 @@ function generateAndDetect() {
     var tri1 = document.getElementsByClassName('tri1');
     var tri2 = document.getElementsByClassName('tri2');
     for (var i = 0; i < tri1.length; i++) {
+        tri1[i].value = Math.random() * 500;
+        tri2[i].value = Math.random() * 500;
         t1[Math.floor(i / 3)][i % 3] = numeric.parseFloat(tri1[i].value);
         t2[Math.floor(i / 3)][i % 3] = numeric.parseFloat(tri2[i].value);
     }

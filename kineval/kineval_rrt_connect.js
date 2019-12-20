@@ -138,7 +138,7 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
     T_b = tree_init(q_goal_config);
     RRT_connect_flag = true;
     step = 0.4;
-    radius = 1.5 * step;
+    radius = 2 * step;
     angle_scale = 0.1;
     threshold_goal = 0.7;
 }
@@ -148,7 +148,7 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
 function robot_rrt_planner_iterate() {
 
     var i;
-    rrt_alg = 1;  // 0: basic rrt (OPTIONAL), 1: rrt_connect (REQUIRED), 2: rrt_star
+    rrt_alg = 2;  // 0: basic rrt (OPTIONAL), 1: rrt_connect (REQUIRED), 2: rrt_star
 
     if (rrt_iterate && (Date.now()-cur_time > 10)) {
         cur_time = Date.now();
